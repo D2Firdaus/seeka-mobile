@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 
-import '../data/app_state.dart';
-import '../data/models.dart';
-import '../theme.dart';
-import '../widgets/app_image.dart';
+import '../../core/constants.dart';
+import '../../core/theme.dart';
+import '../../core/utils/formatters.dart';
+import '../../data/auth_store.dart';
+import '../../data/laporan_store.dart';
+import '../../data/models.dart';
+import '../../shared/app_image.dart';
 
 class ReportFormScreen extends StatefulWidget {
   final TipeLaporan tipe;
@@ -169,10 +172,10 @@ class _ReportFormScreenState extends State<ReportFormScreen>
       return;
     }
     setState(() => _submitting = true);
-    final user = AppState.instance.currentUser;
+    final user = AuthStore.instance.currentUser;
     if (_isEdit) {
       final old = widget.existing!;
-      AppState.instance.updateLaporan(
+      LaporanStore.instance.updateLaporan(
         Laporan(
           id: old.id,
           tipe: _tipe,
@@ -199,7 +202,7 @@ class _ReportFormScreenState extends State<ReportFormScreen>
       widget.onSubmitted();
       return;
     }
-    AppState.instance.addLaporan(
+    LaporanStore.instance.addLaporan(
       Laporan(
         id: DateTime.now().millisecondsSinceEpoch.toString(),
         tipe: _tipe,

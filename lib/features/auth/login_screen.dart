@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 
-import '../data/app_state.dart';
-import '../theme.dart';
-import '../widgets/app_logo.dart';
+import '../../core/theme.dart';
+import '../../data/auth_store.dart';
+import '../../shared/app_logo.dart';
 import 'register_screen.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -27,7 +27,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
   void _submit() {
     if (!(_formKey.currentState?.validate() ?? false)) return;
-    final err = AppState.instance.login(
+    final err = AuthStore.instance.login(
       email: _emailCtrl.text,
       password: _passCtrl.text,
     );

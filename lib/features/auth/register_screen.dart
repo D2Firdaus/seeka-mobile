@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 
-import '../data/app_state.dart';
-import '../theme.dart';
-import '../widgets/app_logo.dart';
+import '../../core/theme.dart';
+import '../../data/auth_store.dart';
+import '../../shared/app_logo.dart';
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
@@ -41,7 +41,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
       );
       return;
     }
-    final err = AppState.instance.register(
+    final err = AuthStore.instance.register(
       nama: _namaCtrl.text,
       email: _emailCtrl.text,
       password: _passCtrl.text,

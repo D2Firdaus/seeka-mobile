@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 
+import '../core/theme.dart';
+import '../core/utils/formatters.dart';
 import '../data/models.dart';
-import '../screens/detail_screen.dart';
-import '../theme.dart';
+import '../features/report/detail_screen.dart';
 import 'app_image.dart';
 
 class StatusBadge extends StatelessWidget {

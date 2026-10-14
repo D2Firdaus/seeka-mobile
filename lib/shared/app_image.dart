@@ -3,7 +3,7 @@ import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
-import '../theme.dart';
+import '../core/theme.dart';
 
 /// Provider gambar yang aman untuk web (blob:/data:/http) maupun mobile (path file).
 ImageProvider imageProviderFor(String path) {

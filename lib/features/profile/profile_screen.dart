@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 
-import '../data/app_state.dart';
-import '../data/models.dart';
-import '../theme.dart';
-import '../widgets/report_card.dart';
-import 'report_form_screen.dart';
+import '../../core/theme.dart';
+import '../../core/utils/formatters.dart';
+import '../../data/auth_store.dart';
+import '../../data/laporan_store.dart';
+import '../../data/models.dart';
+import '../../shared/report_card.dart';
+import '../report/report_form_screen.dart';
 
 class ProfileScreen extends StatelessWidget {
   final VoidCallback onGoHome;
@@ -42,7 +44,7 @@ class ProfileScreen extends StatelessWidget {
       ),
     );
     if (ya == true && context.mounted) {
-      AppState.instance.logout();
+      AuthStore.instance.logout();
     }
   }
 
@@ -63,16 +65,16 @@ class ProfileScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ListenableBuilder(
-      listenable: AppState.instance,
+      listenable: Listenable.merge([AuthStore.instance, LaporanStore.instance]),
       builder: (context, _) => _buildContent(context),
     );
   }
 
   Widget _buildContent(BuildContext context) {
-    final user = AppState.instance.currentUser;
+    final user = AuthStore.instance.currentUser;
     final daftar = user == null
         ? <Laporan>[]
-        : AppState.instance.laporanSaya(user.email);
+        : LaporanStore.instance.laporanSaya(user.email);
 
     return SafeArea(
       child: ListView(
@@ -198,7 +200,7 @@ class ProfileScreen extends StatelessWidget {
                         final next = l.diklaim
                             ? StatusLaporan.aktif
                             : StatusLaporan.diklaim;
-                        AppState.instance.setStatusLaporan(l.id, next);
+                        LaporanStore.instance.setStatusLaporan(l.id, next);
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(
                             content: Text(
@@ -309,7 +311,7 @@ class _GantiSandiSheetState extends State<_GantiSandiSheet> {
 
   void _simpan() {
     if (!(_formKey.currentState?.validate() ?? false)) return;
-    final err = AppState.instance.changePassword(
+    final err = AuthStore.instance.changePassword(
       currentPassword: _lamaCtrl.text,
       newPassword: _baruCtrl.text,
     );

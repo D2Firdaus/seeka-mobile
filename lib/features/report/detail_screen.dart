@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-import '../data/models.dart';
-import '../theme.dart';
-import '../widgets/app_image.dart';
-import '../widgets/report_card.dart';
+import '../../core/theme.dart';
+import '../../core/utils/formatters.dart';
+import '../../data/models.dart';
+import '../../shared/app_image.dart';
+import '../../shared/report_card.dart';
 
 class DetailScreen extends StatefulWidget {
   final Laporan laporan;

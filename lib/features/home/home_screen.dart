@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
 
-import '../data/app_state.dart';
-import '../data/models.dart';
-import '../theme.dart';
-import '../widgets/app_logo.dart';
-import '../widgets/report_card.dart';
+import '../../core/constants.dart';
+import '../../core/theme.dart';
+import '../../core/utils/formatters.dart';
+import '../../data/laporan_store.dart';
+import '../../shared/app_logo.dart';
+import '../../shared/report_card.dart';
 import 'search_results_screen.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -62,7 +63,6 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _pilihLokasi() async {
-    final lokasiList = AppState.instance.semuaLokasi;
     final pilihan = await showModalBottomSheet<String>(
       context: context,
       shape: const RoundedRectangleBorder(
@@ -70,7 +70,7 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
       builder: (ctx) => _FilterSheet(
         title: 'Lokasi',
-        options: ['Semua', ...lokasiList],
+        options: ['Semua', ...kLokasiOptions],
         selected: _lokasi ?? 'Semua',
       ),
     );
@@ -148,7 +148,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final hasil = AppState.instance.query(
+    final hasil = LaporanStore.instance.query(
       kategori: _kategori,
       lokasi: _lokasi,
       tipe: _tipe,

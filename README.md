@@ -2,4 +2,4 @@
 
 A new Flutter project.
 
-![Seeka](SEEKA.png)
+![Seeka](assets/images/SEEKA.png)

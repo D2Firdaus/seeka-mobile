@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 
-import '../data/app_state.dart';
-import '../data/models.dart';
-import '../theme.dart';
-import '../widgets/report_card.dart';
+import '../../core/constants.dart';
+import '../../core/theme.dart';
+import '../../core/utils/formatters.dart';
+import '../../data/laporan_store.dart';
+import '../../data/models.dart';
+import '../../shared/report_card.dart';
 
 class SearchResultsScreen extends StatefulWidget {
   final String initialQuery;
@@ -44,7 +46,7 @@ class _SearchResultsScreenState extends State<SearchResultsScreen> {
     super.dispose();
   }
 
-  List<Laporan> get _hasil => AppState.instance.query(
+  List<Laporan> get _hasil => LaporanStore.instance.query(
     q: _searchCtrl.text,
     deskripsi: _descCtrl.text,
     kategori: _kategori,
@@ -248,7 +250,7 @@ class _SearchResultsScreenState extends State<SearchResultsScreen> {
                       _lokasi,
                       () => _pilihOpsi(
                         'Lokasi',
-                        ['Semua', ...AppState.instance.semuaLokasi],
+                        ['Semua', ...kLokasiOptions],
                         _lokasi,
                         (v) => _lokasi = v,
                       ),

@@ -12,6 +12,7 @@
 .swiftpm/
 migrate_working_dir/
 design/
+AGENTS.MD
 
 # IntelliJ related
 *.iml
