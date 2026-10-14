@@ -1,16 +1,31 @@
 import 'package:flutter/material.dart';
 
+import 'data/app_state.dart';
+import 'screens/login_screen.dart';
+import 'screens/main_shell.dart';
+import 'theme.dart';
+
 void main() {
-  runApp(const MainApp());
+  runApp(const SeekaApp());
 }
 
-class MainApp extends StatelessWidget {
-  const MainApp({super.key});
+class SeekaApp extends StatelessWidget {
+  const SeekaApp({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return const MaterialApp(
-      home: Scaffold(body: Center(child: Text('Hello World!'))),
+    return MaterialApp(
+      title: 'SEEKA',
+      debugShowCheckedModeBanner: false,
+      theme: seekaTheme,
+      home: ListenableBuilder(
+        listenable: AppState.instance,
+        builder: (context, _) {
+          return AppState.instance.currentUser == null
+              ? const LoginScreen()
+              : const MainShell();
+        },
+      ),
     );
   }
 }
