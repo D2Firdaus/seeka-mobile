@@ -1,60 +1,73 @@
 import 'package:flutter/material.dart';
 
+import '../core/utils/foto_store.dart';
 import 'models.dart';
+import 'prefs.dart';
 
 /// Menangani data laporan: CRUD, status, dan query/filter.
 class LaporanStore extends ChangeNotifier {
-  LaporanStore._() {
-    _seed();
-  }
+  LaporanStore._();
 
   static final LaporanStore instance = LaporanStore._();
 
   final List<Laporan> laporan = [];
 
-  void _seed() {
-    laporan.addAll([
-      Laporan(
-        id: '1',
-        tipe: TipeLaporan.penemuan,
-        namaBarang: 'Dompet kulit hitam',
-        kategori: 'Dompet',
-        deskripsi: 'Model lipat, ditemukan di dekat halte Dago.',
-        fotoPaths: const [],
-        lokasi: 'Lab Lanjut 2',
-        tanggal: DateTime(2026, 10, 14),
-        nomorWa: '6281234567890',
-        pelapor: 'Demo',
-      ),
-      Laporan(
-        id: '2',
-        tipe: TipeLaporan.kehilangan,
-        namaBarang: 'Kunci Warna Hitam',
-        kategori: 'Kunci',
-        deskripsi: 'Ada gantungan bola kecil.',
-        fotoPaths: const [],
-        lokasi: 'Lab Lanjut 2',
-        tanggal: DateTime(2026, 10, 15),
-        nomorWa: '6281234567891',
-        pelapor: 'Demo',
-      ),
-      Laporan(
-        id: '3',
-        tipe: TipeLaporan.penemuan,
-        namaBarang: 'Samsung Galaxy 90 Pro',
-        kategori: 'Handphone',
-        deskripsi: 'Galaxy Andromeda Aja kalah.',
-        fotoPaths: const [],
-        lokasi: 'Lab Lanjut 2',
-        tanggal: DateTime(2026, 10, 14),
-        nomorWa: '6281234567892',
-        pelapor: 'Demo',
-      ),
-    ]);
+  /// Hydrate dari SharedPreferences; seed demo bila belum ada data.
+  Future<void> init() async {
+    final rows = Prefs.readList(kKeyLaporan);
+    laporan
+      ..clear()
+      ..addAll(rows == null ? _seed() : rows.map(Laporan.fromJson));
+    notifyListeners();
   }
+
+  Future<void> _save() => Prefs.writeList(
+        kKeyLaporan,
+        laporan.map((l) => l.toJson()).toList(growable: false),
+      );
+
+  List<Laporan> _seed() => [
+        Laporan(
+          id: '1',
+          tipe: TipeLaporan.penemuan,
+          namaBarang: 'Dompet kulit hitam',
+          kategori: 'Dompet',
+          deskripsi: 'Model lipat, ditemukan di dekat halte Dago.',
+          fotoPaths: const [],
+          lokasi: 'Lab Lanjut 2',
+          tanggal: DateTime(2026, 10, 14),
+          nomorWa: '6281234567890',
+          pelapor: 'Demo',
+        ),
+        Laporan(
+          id: '2',
+          tipe: TipeLaporan.kehilangan,
+          namaBarang: 'Kunci Warna Hitam',
+          kategori: 'Kunci',
+          deskripsi: 'Ada gantungan bola kecil.',
+          fotoPaths: const [],
+          lokasi: 'Lab Lanjut 2',
+          tanggal: DateTime(2026, 10, 15),
+          nomorWa: '6281234567891',
+          pelapor: 'Demo',
+        ),
+        Laporan(
+          id: '3',
+          tipe: TipeLaporan.penemuan,
+          namaBarang: 'Samsung Galaxy 90 Pro',
+          kategori: 'Handphone',
+          deskripsi: 'Galaxy Andromeda Aja kalah.',
+          fotoPaths: const [],
+          lokasi: 'Lab Lanjut 2',
+          tanggal: DateTime(2026, 10, 14),
+          nomorWa: '6281234567892',
+          pelapor: 'Demo',
+        ),
+      ];
 
   void addLaporan(Laporan l) {
     laporan.insert(0, l);
+    _save();
     notifyListeners();
   }
 
@@ -62,6 +75,18 @@ class LaporanStore extends ChangeNotifier {
     final i = laporan.indexWhere((l) => l.id == updated.id);
     if (i != -1) {
       laporan[i] = updated;
+      _save();
+      notifyListeners();
+    }
+  }
+
+  /// Hapus laporan beserta file fotonya dari disk.
+  void deleteLaporan(String id) {
+    final i = laporan.indexWhere((l) => l.id == id);
+    if (i != -1) {
+      final old = laporan.removeAt(i);
+      FotoStore.hapusSemua(old.fotoPaths);
+      _save();
       notifyListeners();
     }
   }
@@ -84,6 +109,7 @@ class LaporanStore extends ChangeNotifier {
         pelaporEmail: old.pelaporEmail,
         status: status,
       );
+      _save();
       notifyListeners();
     }
   }

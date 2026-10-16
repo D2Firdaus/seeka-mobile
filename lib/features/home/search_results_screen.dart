@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 
-import '../../core/constants.dart';
 import '../../core/theme.dart';
 import '../../core/utils/formatters.dart';
 import '../../data/laporan_store.dart';
 import '../../data/models.dart';
+import '../../data/referensi_store.dart';
 import '../../shared/report_card.dart';
 
 class SearchResultsScreen extends StatefulWidget {
@@ -167,6 +167,16 @@ class _SearchResultsScreenState extends State<SearchResultsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    return ListenableBuilder(
+      listenable: Listenable.merge([
+        LaporanStore.instance,
+        ReferensiStore.instance,
+      ]),
+      builder: (context, _) => _buildContent(context),
+    );
+  }
+
+  Widget _buildContent(BuildContext context) {
     final hasil = _hasil;
     return Scaffold(
       backgroundColor: Colors.white,
@@ -239,7 +249,7 @@ class _SearchResultsScreenState extends State<SearchResultsScreen> {
                       _kategori,
                       () => _pilihOpsi(
                         'Kategori',
-                        ['Semua', ...kKategoriOptions],
+                        ['Semua', ...ReferensiStore.instance.semuaNamaKategori],
                         _kategori,
                         (v) => _kategori = v,
                       ),
@@ -250,7 +260,7 @@ class _SearchResultsScreenState extends State<SearchResultsScreen> {
                       _lokasi,
                       () => _pilihOpsi(
                         'Lokasi',
-                        ['Semua', ...kLokasiOptions],
+                        ['Semua', ...ReferensiStore.instance.semuaNamaLokasi],
                         _lokasi,
                         (v) => _lokasi = v,
                       ),

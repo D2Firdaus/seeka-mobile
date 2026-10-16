@@ -1,12 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 
-import '../../core/constants.dart';
 import '../../core/theme.dart';
 import '../../core/utils/formatters.dart';
+import '../../core/utils/foto_store.dart';
 import '../../data/auth_store.dart';
 import '../../data/laporan_store.dart';
 import '../../data/models.dart';
+import '../../data/referensi_store.dart';
 import '../../shared/app_image.dart';
 
 class ReportFormScreen extends StatefulWidget {
@@ -35,10 +36,10 @@ class _ReportFormScreenState extends State<ReportFormScreen>
   final _formKey = GlobalKey<FormState>();
   final _namaCtrl = TextEditingController();
   final _descCtrl = TextEditingController();
-  final _lokasiCtrl = TextEditingController();
   final _waCtrl = TextEditingController();
 
   String? _kategori;
+  String? _lokasi;
   DateTime? _tanggal;
   final List<String> _fotoPaths = [];
   bool _setuju = false;
@@ -57,7 +58,7 @@ class _ReportFormScreenState extends State<ReportFormScreen>
     if (e != null) {
       _namaCtrl.text = e.namaBarang;
       _descCtrl.text = e.deskripsi;
-      _lokasiCtrl.text = e.lokasi;
+      _lokasi = e.lokasi;
       _waCtrl.text = e.nomorWa;
       _kategori = e.kategori;
       _tanggal = e.tanggal;
@@ -70,7 +71,6 @@ class _ReportFormScreenState extends State<ReportFormScreen>
   void dispose() {
     _namaCtrl.dispose();
     _descCtrl.dispose();
-    _lokasiCtrl.dispose();
     _waCtrl.dispose();
     super.dispose();
   }
@@ -107,6 +107,13 @@ class _ReportFormScreenState extends State<ReportFormScreen>
   String get _tanggalLabel =>
       _isPenemuan ? 'Tanggal penemuan' : 'Tanggal kehilangan';
 
+  /// Gabungkan opsi aktif dgn nilai lama (mis. kategori/lokasi terarsip
+  /// pada laporan yang sedang diedit) supaya tetap tampil di dropdown.
+  List<String> _opsiDenganNilaiLama(List<String> aktif, String? nilaiLama) {
+    if (nilaiLama == null || aktif.contains(nilaiLama)) return aktif;
+    return [...aktif, nilaiLama];
+  }
+
   Future<void> _pickFoto() async {
     if (_fotoPaths.length >= 3) {
       ScaffoldMessenger.of(context)
@@ -119,7 +126,8 @@ class _ReportFormScreenState extends State<ReportFormScreen>
         imageQuality: 80,
       );
       if (picked != null) {
-        setState(() => _fotoPaths.add(picked.path));
+        final path = await FotoStore.simpanFoto(picked);
+        if (mounted) setState(() => _fotoPaths.add(path));
       }
     } catch (e) {
       if (mounted) {
@@ -150,10 +158,10 @@ class _ReportFormScreenState extends State<ReportFormScreen>
     _formKey.currentState?.reset();
     _namaCtrl.clear();
     _descCtrl.clear();
-    _lokasiCtrl.clear();
     _waCtrl.clear();
     setState(() {
       _kategori = null;
+      _lokasi = null;
       _tanggal = null;
       _fotoPaths.clear();
       _setuju = false;
@@ -175,6 +183,7 @@ class _ReportFormScreenState extends State<ReportFormScreen>
     final user = AuthStore.instance.currentUser;
     if (_isEdit) {
       final old = widget.existing!;
+      final oldPaths = Set<String>.from(old.fotoPaths);
       LaporanStore.instance.updateLaporan(
         Laporan(
           id: old.id,
@@ -183,7 +192,7 @@ class _ReportFormScreenState extends State<ReportFormScreen>
           kategori: _kategori!,
           deskripsi: _descCtrl.text.trim(),
           fotoPaths: List.from(_fotoPaths),
-          lokasi: _lokasiCtrl.text.trim(),
+          lokasi: _lokasi!,
           tanggal: _tanggal!,
           nomorWa: _waCtrl.text.trim(),
           pelapor: old.pelapor,
@@ -191,6 +200,9 @@ class _ReportFormScreenState extends State<ReportFormScreen>
           status: old.status,
         ),
       );
+      for (final p in oldPaths.difference(_fotoPaths.toSet())) {
+        FotoStore.hapusFoto(p);
+      }
       setState(() => _submitting = false);
       final messenger = ScaffoldMessenger.of(context);
       messenger.showSnackBar(
@@ -210,7 +222,7 @@ class _ReportFormScreenState extends State<ReportFormScreen>
         kategori: _kategori!,
         deskripsi: _descCtrl.text.trim(),
         fotoPaths: List.from(_fotoPaths),
-        lokasi: _lokasiCtrl.text.trim(),
+        lokasi: _lokasi!,
         tanggal: _tanggal!,
         nomorWa: _waCtrl.text.trim(),
         pelapor: user?.nama ?? 'Anonim',
@@ -353,7 +365,10 @@ class _ReportFormScreenState extends State<ReportFormScreen>
                           Icons.keyboard_arrow_down,
                           color: kTextGray,
                         ),
-                        items: kKategoriOptions
+                        items: _opsiDenganNilaiLama(
+                          ReferensiStore.instance.kategoriAktif,
+                          _kategori,
+                        )
                             .map(
                               (k) => DropdownMenuItem(value: k, child: Text(k)),
                             )
@@ -396,7 +411,10 @@ class _ReportFormScreenState extends State<ReportFormScreen>
               _FotoBox(
                 fotoPaths: _fotoPaths,
                 onPick: _pickFoto,
-                onRemove: (i) => setState(() => _fotoPaths.removeAt(i)),
+                onRemove: (i) {
+                  if (!_isEdit) FotoStore.hapusFoto(_fotoPaths[i]);
+                  setState(() => _fotoPaths.removeAt(i));
+                },
               ),
               const SizedBox(height: 16),
               _SectionCard(
@@ -408,19 +426,26 @@ class _ReportFormScreenState extends State<ReportFormScreen>
                     Expanded(
                       child: _LabeledField(
                         label: '$_lokasiLabel *',
-                        child: TextFormField(
-                          controller: _lokasiCtrl,
-                          decoration: InputDecoration(
-                            hintText: 'Lokasi',
-                            suffixIcon: const Icon(
-                              Icons.place_outlined,
-                              color: kTextGray,
-                              size: 20,
-                            ),
+                        child: DropdownButtonFormField<String>(
+                          key: ValueKey('lokasi-$_lokasi'),
+                          initialValue: _lokasi,
+                          hint: const Text('Pilih lokasi'),
+                          isExpanded: true,
+                          icon: const Icon(
+                            Icons.keyboard_arrow_down,
+                            color: kTextGray,
                           ),
-                          validator: (v) => (v == null || v.trim().isEmpty)
-                              ? 'Wajib diisi'
-                              : null,
+                          items: _opsiDenganNilaiLama(
+                            ReferensiStore.instance.lokasiAktif,
+                            _lokasi,
+                          )
+                              .map(
+                                (l) =>
+                                    DropdownMenuItem(value: l, child: Text(l)),
+                              )
+                              .toList(),
+                          onChanged: (v) => setState(() => _lokasi = v),
+                          validator: (v) => v == null ? 'Pilih' : null,
                         ),
                       ),
                     ),
