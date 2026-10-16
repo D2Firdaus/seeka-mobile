@@ -6,6 +6,7 @@ import '../../data/auth_store.dart';
 import '../../data/laporan_store.dart';
 import '../../data/models.dart';
 import '../../shared/report_card.dart';
+import '../admin/admin_panel_screen.dart';
 import '../report/report_form_screen.dart';
 
 class ProfileScreen extends StatelessWidget {
@@ -227,6 +228,37 @@ class ProfileScreen extends StatelessWidget {
             ),
             child: Column(
               children: [
+                if (user?.role == Role.admin) ...[
+                  ListTile(
+                    leading: const Icon(
+                      Icons.admin_panel_settings_outlined,
+                      color: kPrimary,
+                    ),
+                    title: const Text(
+                      'Panel Admin',
+                      style: TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w600,
+                        color: kTextDark,
+                      ),
+                    ),
+                    subtitle: const Text(
+                      'Kelola kategori, lokasi, laporan, dan pengguna',
+                      style: TextStyle(fontSize: 12, color: kTextGray),
+                    ),
+                    trailing: const Icon(
+                      Icons.chevron_right,
+                      color: kTextGray,
+                      size: 20,
+                    ),
+                    onTap: () => Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (_) => const AdminPanelScreen(),
+                      ),
+                    ),
+                  ),
+                  const Divider(color: kBorder, height: 1),
+                ],
                 ListTile(
                   leading: const Icon(Icons.lock_outline, color: kPrimary),
                   title: const Text(
