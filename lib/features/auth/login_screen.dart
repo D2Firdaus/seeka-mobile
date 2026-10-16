@@ -74,6 +74,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   decoration: const InputDecoration(
                     hintText: 'Masukkan email kamu',
                   ),
+                  onChanged: (_) => setState(() {}),
                   validator: (v) {
                     final t = v?.trim() ?? '';
                     if (t.isEmpty) return 'Email wajib diisi';
@@ -101,11 +102,29 @@ class _LoginScreenState extends State<LoginScreen> {
                       onPressed: () => setState(() => _obscure = !_obscure),
                     ),
                   ),
-                  validator: (v) => (v == null || v.isEmpty)
-                      ? 'Kata sandi wajib diisi'
-                      : null,
+                  validator: (v) {
+                    if (!AuthStore.instance.emailButuhPassword(_emailCtrl.text)) {
+                      return null;
+                    }
+                    return (v == null || v.isEmpty)
+                        ? 'Kata sandi wajib diisi'
+                        : null;
+                  },
                   onFieldSubmitted: (_) => _submit(),
                 ),
+                if (AuthStore.instance.akunTanpaPassword(_emailCtrl.text)) ...[
+                  const SizedBox(height: 8),
+                  const Row(
+                    children: [
+                      Icon(Icons.info_outline, size: 14, color: kTextGray),
+                      SizedBox(width: 6),
+                      Text(
+                        'Akun admin — biarkan kolom kata sandi kosong.',
+                        style: TextStyle(fontSize: 12, color: kTextGray),
+                      ),
+                    ],
+                  ),
+                ],
                 const SizedBox(height: 12),
                 Align(
                   alignment: Alignment.centerRight,
