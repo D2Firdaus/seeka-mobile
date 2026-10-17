@@ -11,7 +11,7 @@
 .svn/
 .swiftpm/
 migrate_working_dir/
-design/
+docs/
 AGENTS.MD
 
 # IntelliJ related
