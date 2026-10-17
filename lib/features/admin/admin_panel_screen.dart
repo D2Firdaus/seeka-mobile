@@ -6,6 +6,8 @@ import '../../data/auth_store.dart';
 import '../../data/laporan_store.dart';
 import '../../data/models.dart';
 import '../../data/referensi_store.dart';
+import '../../shared/filter_sheet.dart';
+import '../../shared/report_card.dart';
 import '../report/report_form_screen.dart';
 
 /// Panel admin: kelola referensi (kategori/lokasi), laporan, dan pengguna.
@@ -319,15 +321,95 @@ class _TabLaporan extends StatefulWidget {
 }
 
 class _TabLaporanState extends State<_TabLaporan> {
-  String _tipe = 'Semua';
+  String? _kategori;
+  String? _lokasi;
+  String? _tipe;
+  DateTimeRange? _tanggal;
   String _q = '';
+  String _dd = '';
+
+  Future<void> _pilihKategori() async {
+    final pilihan = await showModalBottomSheet<String>(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(12)),
+      ),
+      builder: (ctx) => FilterSheet(
+        title: 'Kategori',
+        options: ['Semua', ...ReferensiStore.instance.semuaNamaKategori],
+        selected: _kategori ?? 'Semua',
+      ),
+    );
+    if (pilihan != null) {
+      setState(() => _kategori = pilihan == 'Semua' ? null : pilihan);
+    }
+  }
+
+  Future<void> _pilihLokasi() async {
+    final pilihan = await showModalBottomSheet<String>(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(12)),
+      ),
+      builder: (ctx) => FilterSheet(
+        title: 'Lokasi',
+        options: ['Semua', ...ReferensiStore.instance.semuaNamaLokasi],
+        selected: _lokasi ?? 'Semua',
+      ),
+    );
+    if (pilihan != null) {
+      setState(() => _lokasi = pilihan == 'Semua' ? null : pilihan);
+    }
+  }
+
+  Future<void> _pilihTipe() async {
+    final pilihan = await showModalBottomSheet<String>(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(12)),
+      ),
+      builder: (ctx) => FilterSheet(
+        title: 'Tipe',
+        options: const ['Semua', 'Ditemukan', 'Kehilangan', 'Diklaim'],
+        selected: _tipe ?? 'Semua',
+      ),
+    );
+    if (pilihan != null) {
+      setState(() => _tipe = pilihan == 'Semua' ? null : pilihan);
+    }
+  }
+
+  Future<void> _pilihTanggal() async {
+    final picked = await pilihTanggalFilter(context, _tanggal);
+    if (picked != _tanggal && mounted) {
+      setState(() => _tanggal = picked);
+    }
+  }
 
   List<Laporan> get _hasil {
     var list = LaporanStore.instance.laporan;
+    if (_kategori != null) {
+      list = list.where((l) => l.kategori == _kategori).toList();
+    }
+    if (_lokasi != null) {
+      list = list.where((l) => l.lokasi == _lokasi).toList();
+    }
     if (_tipe == 'Ditemukan') {
       list = list.where((l) => l.tipe == TipeLaporan.penemuan).toList();
     } else if (_tipe == 'Kehilangan') {
       list = list.where((l) => l.tipe == TipeLaporan.kehilangan).toList();
+    } else if (_tipe == 'Diklaim') {
+      list = list.where((l) => l.diklaim).toList();
+    }
+    final range = _tanggal;
+    if (range != null) {
+      list = list
+          .where(
+            (l) =>
+                !l.tanggal.isBefore(range.start) &&
+                !l.tanggal.isAfter(range.end),
+          )
+          .toList();
     }
     final qq = _q.trim().toLowerCase();
     if (qq.isNotEmpty) {
@@ -337,6 +419,12 @@ class _TabLaporanState extends State<_TabLaporan> {
                 l.namaBarang.toLowerCase().contains(qq) ||
                 l.pelapor.toLowerCase().contains(qq),
           )
+          .toList();
+    }
+    final dd = _dd.trim().toLowerCase();
+    if (dd.isNotEmpty) {
+      list = list
+          .where((l) => l.deskripsi.toLowerCase().contains(dd))
           .toList();
     }
     return list;
@@ -380,8 +468,6 @@ class _TabLaporanState extends State<_TabLaporan> {
         builder: (formCtx) => ReportFormScreen(
           tipe: l.tipe,
           existing: l,
-          backLabel: 'panel admin',
-          onGoHome: () => Navigator.pop(formCtx),
           onSubmitted: () => Navigator.pop(formCtx),
         ),
       ),
@@ -406,31 +492,48 @@ class _TabLaporanState extends State<_TabLaporan> {
                 onChanged: (v) => setState(() => _q = v),
               ),
             ),
+            const SizedBox(height: 10),
             Padding(
-              padding: const EdgeInsets.symmetric(vertical: 10),
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: TextField(
+                decoration: const InputDecoration(
+                  hintText: 'Masukkan Deskripsi',
+                ),
+                onChanged: (v) => setState(() => _dd = v),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 14, 16, 4),
               child: SingleChildScrollView(
                 scrollDirection: Axis.horizontal,
-                padding: const EdgeInsets.symmetric(horizontal: 16),
                 child: Row(
                   children: [
-                    for (final t in const ['Semua', 'Ditemukan', 'Kehilangan'])
-                      Padding(
-                        padding: const EdgeInsets.only(right: 8),
-                        child: ChoiceChip(
-                          label: Text(t),
-                          selected: _tipe == t,
-                          selectedColor: kPinkBg,
-                          labelStyle: TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w600,
-                            color: _tipe == t ? kPrimary : kTextDark,
-                          ),
-                          side: BorderSide(
-                            color: _tipe == t ? kPrimary : kBorder,
-                          ),
-                          onSelected: (_) => setState(() => _tipe = t),
-                        ),
-                      ),
+                    FilterChipButton(
+                      label: 'Kategori',
+                      value: _kategori,
+                      onTap: _pilihKategori,
+                    ),
+                    const SizedBox(width: 10),
+                    FilterChipButton(
+                      label: 'Lokasi',
+                      value: _lokasi,
+                      onTap: _pilihLokasi,
+                    ),
+                    const SizedBox(width: 10),
+                    FilterChipButton(
+                      label: 'Tanggal',
+                      icon: Icons.calendar_today_outlined,
+                      value: _tanggal == null
+                          ? null
+                          : '${formatTanggal(_tanggal!.start)} - ${formatTanggal(_tanggal!.end)}',
+                      onTap: _pilihTanggal,
+                    ),
+                    const SizedBox(width: 10),
+                    FilterChipButton(
+                      label: 'Tipe',
+                      value: _tipe,
+                      onTap: _pilihTipe,
+                    ),
                   ],
                 ),
               ),

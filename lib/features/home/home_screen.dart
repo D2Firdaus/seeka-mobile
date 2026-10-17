@@ -5,13 +5,11 @@ import '../../core/utils/formatters.dart';
 import '../../data/laporan_store.dart';
 import '../../data/referensi_store.dart';
 import '../../shared/app_logo.dart';
+import '../../shared/filter_sheet.dart';
 import '../../shared/report_card.dart';
-import 'search_results_screen.dart';
 
 class HomeScreen extends StatefulWidget {
-  final VoidCallback onGoHome;
-
-  const HomeScreen({super.key, required this.onGoHome});
+  const HomeScreen({super.key});
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();
@@ -56,15 +54,8 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   void _submitSearch() {
-    Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (_) => SearchResultsScreen(
-          initialQuery: _searchCtrl.text,
-          initialDeskripsi: _descCtrl.text,
-          onGoHome: widget.onGoHome,
-        ),
-      ),
-    );
+    FocusScope.of(context).unfocus();
+    setState(() {});
   }
 
   Future<void> _pilihKategori() async {
@@ -73,7 +64,7 @@ class _HomeScreenState extends State<HomeScreen> {
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(12)),
       ),
-      builder: (ctx) => _FilterSheet(
+      builder: (ctx) => FilterSheet(
         title: 'Kategori',
         options: ['Semua', ...ReferensiStore.instance.semuaNamaKategori],
         selected: _kategori ?? 'Semua',
@@ -90,7 +81,7 @@ class _HomeScreenState extends State<HomeScreen> {
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(12)),
       ),
-      builder: (ctx) => _FilterSheet(
+      builder: (ctx) => FilterSheet(
         title: 'Lokasi',
         options: ['Semua', ...ReferensiStore.instance.semuaNamaLokasi],
         selected: _lokasi ?? 'Semua',
@@ -107,9 +98,9 @@ class _HomeScreenState extends State<HomeScreen> {
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(12)),
       ),
-      builder: (ctx) => _FilterSheet(
+      builder: (ctx) => FilterSheet(
         title: 'Tipe',
-        options: const ['Semua', 'Ditemukan', 'Kehilangan'],
+        options: const ['Semua', 'Ditemukan', 'Kehilangan', 'Diklaim'],
         selected: _tipe ?? 'Semua',
       ),
     );
@@ -119,52 +110,9 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _pilihTanggal() async {
-    final aksi = await showModalBottomSheet<String>(
-      context: context,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(12)),
-      ),
-      builder: (ctx) => SafeArea(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            ListTile(
-              leading: const Icon(Icons.date_range_outlined, color: kPrimary),
-              title: const Text('Pilih rentang tanggal'),
-              subtitle: _tanggal == null
-                  ? const Text('Belum ada filter tanggal')
-                  : Text(
-                      '${formatTanggal(_tanggal!.start)} - ${formatTanggal(_tanggal!.end)}',
-                    ),
-              onTap: () => Navigator.pop(ctx, 'pilih'),
-            ),
-            if (_tanggal != null)
-              ListTile(
-                leading: const Icon(Icons.clear, color: kTextGray),
-                title: const Text('Hapus filter tanggal'),
-                onTap: () => Navigator.pop(ctx, 'hapus'),
-              ),
-          ],
-        ),
-      ),
-    );
-    if (aksi == 'pilih' && mounted) {
-      final now = DateTime.now();
-      final picked = await showDateRangePicker(
-        context: context,
-        firstDate: DateTime(now.year - 1),
-        lastDate: DateTime(now.year + 1),
-        initialDateRange: _tanggal,
-        builder: (context, child) => Theme(
-          data: Theme.of(
-            context,
-          ).copyWith(colorScheme: const ColorScheme.light(primary: kPrimary)),
-          child: child!,
-        ),
-      );
-      if (picked != null) setState(() => _tanggal = picked);
-    } else if (aksi == 'hapus') {
-      setState(() => _tanggal = null);
+    final picked = await pilihTanggalFilter(context, _tanggal);
+    if (picked != _tanggal && mounted) {
+      setState(() => _tanggal = picked);
     }
   }
 
@@ -181,6 +129,8 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Widget _buildContent(BuildContext context) {
     final hasil = LaporanStore.instance.query(
+      q: _searchCtrl.text,
+      deskripsi: _descCtrl.text,
       kategori: _kategori,
       lokasi: _lokasi,
       tipe: _tipe,
@@ -191,7 +141,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
     return SafeArea(
       child: Container(
-        color: kPrimary,
+        color: Colors.white,
         child: CustomScrollView(
           slivers: [
             SliverToBoxAdapter(
@@ -231,7 +181,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 child: Center(
                   child: Text(
                     'Tidak ada laporan yang cocok.',
-                    style: TextStyle(color: Colors.white70),
+                    style: TextStyle(color: kTextGray),
                   ),
                 ),
               )
@@ -241,7 +191,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 sliver: SliverList.builder(
                   itemCount: hasil.length,
                   itemBuilder: (_, i) =>
-                      ReportCard(laporan: hasil[i], backLabel: 'beranda'),
+                      ReportCard(laporan: hasil[i]),
                 ),
               ),
           ],
@@ -342,47 +292,5 @@ class _StickyAreaDelegate extends SliverPersistentHeaderDelegate {
   @override
   bool shouldRebuild(covariant _StickyAreaDelegate oldDelegate) {
     return oldDelegate.extent != extent || oldDelegate.child != child;
-  }
-}
-
-class _FilterSheet extends StatelessWidget {
-  final String title;
-  final List<String> options;
-  final String selected;
-
-  const _FilterSheet({
-    required this.title,
-    required this.options,
-    required this.selected,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return SafeArea(
-      child: ListView(
-        shrinkWrap: true,
-        children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 16, 16, 4),
-            child: Text(
-              title,
-              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
-            ),
-          ),
-          ...options.map(
-            (o) => RadioGroup<String>(
-              groupValue: selected,
-              onChanged: (v) => Navigator.pop(context, v),
-              child: RadioListTile<String>(
-                value: o,
-                activeColor: kPrimary,
-                title: Text(o),
-              ),
-            ),
-          ),
-          const SizedBox(height: 8),
-        ],
-      ),
-    );
   }
 }

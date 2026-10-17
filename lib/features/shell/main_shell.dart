@@ -23,18 +23,16 @@ class _MainShellState extends State<MainShell> {
       body: IndexedStack(
         index: _index,
         children: [
-          HomeScreen(onGoHome: _goHome),
+          const HomeScreen(),
           ReportFormScreen(
             tipe: TipeLaporan.penemuan,
-            onGoHome: _goHome,
             onSubmitted: _goHome,
           ),
           ReportFormScreen(
             tipe: TipeLaporan.kehilangan,
-            onGoHome: _goHome,
             onSubmitted: _goHome,
           ),
-          ProfileScreen(onGoHome: _goHome),
+          const ProfileScreen(),
         ],
       ),
       bottomNavigationBar: BottomNavigationBar(

@@ -1,18 +1,14 @@
 import 'package:flutter/material.dart';
 
 import '../../core/theme.dart';
-import '../../core/utils/formatters.dart';
 import '../../data/auth_store.dart';
-import '../../data/laporan_store.dart';
 import '../../data/models.dart';
-import '../../shared/report_card.dart';
+import '../../shared/lock_icon.dart';
 import '../admin/admin_panel_screen.dart';
-import '../report/report_form_screen.dart';
+import 'laporan_saya_screen.dart';
 
 class ProfileScreen extends StatelessWidget {
-  final VoidCallback onGoHome;
-
-  const ProfileScreen({super.key, required this.onGoHome});
+  const ProfileScreen({super.key});
 
   void _showGantiSandi(BuildContext context) {
     showModalBottomSheet<void>(
@@ -49,57 +45,21 @@ class ProfileScreen extends StatelessWidget {
     }
   }
 
-  void _editLaporan(BuildContext context, Laporan laporan) {
-    Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (formCtx) => ReportFormScreen(
-          tipe: laporan.tipe,
-          existing: laporan,
-          backLabel: 'profil',
-          onGoHome: () => Navigator.pop(formCtx),
-          onSubmitted: () => Navigator.pop(formCtx),
-        ),
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     return ListenableBuilder(
-      listenable: Listenable.merge([AuthStore.instance, LaporanStore.instance]),
+      listenable: AuthStore.instance,
       builder: (context, _) => _buildContent(context),
     );
   }
 
   Widget _buildContent(BuildContext context) {
     final user = AuthStore.instance.currentUser;
-    final daftar = user == null
-        ? <Laporan>[]
-        : LaporanStore.instance.laporanSaya(user.email);
 
     return SafeArea(
       child: ListView(
         padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
         children: [
-          InkWell(
-            onTap: onGoHome,
-            child: const Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(Icons.arrow_back, size: 16, color: kPrimary),
-                SizedBox(width: 4),
-                Text(
-                  'Kembali ke beranda',
-                  style: TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
-                    color: kPrimary,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 12),
           const Text(
             'Profil',
             style: TextStyle(
@@ -117,11 +77,7 @@ class ProfileScreen extends StatelessWidget {
           Container(
             width: double.infinity,
             padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(3),
-              border: Border.all(color: kBorder),
-            ),
+            decoration: const BoxDecoration(color: Colors.white),
             child: Column(
               children: [
                 Container(
@@ -149,72 +105,6 @@ class ProfileScreen extends StatelessWidget {
                   textAlign: TextAlign.center,
                   style: const TextStyle(fontSize: 13, color: kTextGray),
                 ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 16),
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(3),
-              border: Border.all(color: kBorder),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  'Laporan Saya',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w700,
-                    color: kTextDark,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                const Text(
-                  'Ketuk laporan untuk mengubah detailnya.',
-                  style: TextStyle(fontSize: 12, color: kTextGray),
-                ),
-                const SizedBox(height: 8),
-                if (daftar.isEmpty)
-                  const Padding(
-                    padding: EdgeInsets.symmetric(vertical: 8),
-                    child: Text(
-                      'Belum ada laporan. Buat lewat tab Penemuan atau Kehilangan.',
-                      style: TextStyle(
-                        fontSize: 13,
-                        color: kTextGray,
-                        height: 1.4,
-                      ),
-                    ),
-                  )
-                else
-                  for (var i = 0; i < daftar.length; i++) ...[
-                    if (i > 0) const Divider(color: kBorder, height: 1),
-                    _LaporanTile(
-                      laporan: daftar[i],
-                      onTap: () => _editLaporan(context, daftar[i]),
-                      onToggleStatus: () {
-                        final l = daftar[i];
-                        final next = l.diklaim
-                            ? StatusLaporan.aktif
-                            : StatusLaporan.diklaim;
-                        LaporanStore.instance.setStatusLaporan(l.id, next);
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text(
-                              next == StatusLaporan.diklaim
-                                  ? '"${l.namaBarang}" ditandai sebagai diklaim.'
-                                  : 'Status "${l.namaBarang}" diaktifkan kembali.',
-                            ),
-                            backgroundColor: kPrimary,
-                          ),
-                        );
-                      },
-                    ),
-                  ],
               ],
             ),
           ),
@@ -260,7 +150,36 @@ class ProfileScreen extends StatelessWidget {
                   const Divider(color: kBorder, height: 1),
                 ],
                 ListTile(
-                  leading: const Icon(Icons.lock_outline, color: kPrimary),
+                  leading: const Icon(
+                    Icons.receipt_long_outlined,
+                    color: kPrimary,
+                  ),
+                  title: const Text(
+                    'Laporan Saya',
+                    style: TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w600,
+                      color: kTextDark,
+                    ),
+                  ),
+                  subtitle: const Text(
+                    'Lihat dan kelola laporan yang kamu buat',
+                    style: TextStyle(fontSize: 12, color: kTextGray),
+                  ),
+                  trailing: const Icon(
+                    Icons.chevron_right,
+                    color: kTextGray,
+                    size: 20,
+                  ),
+                  onTap: () => Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (_) => const LaporanSayaScreen(),
+                    ),
+                  ),
+                ),
+                const Divider(color: kBorder, height: 1),
+                ListTile(
+                  leading: const LockIcon(color: kPrimary),
                   title: const Text(
                     'Ganti kata sandi',
                     style: TextStyle(
@@ -516,103 +435,6 @@ class _SandiField extends StatelessWidget {
           ),
         ),
       ],
-    );
-  }
-}
-
-class _LaporanTile extends StatelessWidget {
-  final Laporan laporan;
-  final VoidCallback onTap;
-  final VoidCallback onToggleStatus;
-
-  const _LaporanTile({
-    required this.laporan,
-    required this.onTap,
-    required this.onToggleStatus,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final isPenemuan = laporan.tipe == TipeLaporan.penemuan;
-    return InkWell(
-      onTap: onTap,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 10),
-        child: Row(
-          children: [
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  StatusBadge(label: laporan.badge, found: isPenemuan),
-                  const SizedBox(height: 6),
-                  Text(
-                    laporan.namaBarang,
-                    style: const TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w700,
-                      color: kTextDark,
-                    ),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    '${laporan.lokasi} · ${formatTanggal(laporan.tanggal)}',
-                    style: const TextStyle(fontSize: 12, color: kTextGray),
-                  ),
-                  const SizedBox(height: 8),
-                  _StatusToggle(
-                    diklaim: laporan.diklaim,
-                    onTap: onToggleStatus,
-                  ),
-                ],
-              ),
-            ),
-            const Icon(Icons.chevron_right, color: kTextGray, size: 20),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _StatusToggle extends StatelessWidget {
-  final bool diklaim;
-  final VoidCallback onTap;
-
-  const _StatusToggle({required this.diklaim, required this.onTap});
-
-  @override
-  Widget build(BuildContext context) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(3),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-        decoration: BoxDecoration(
-          color: diklaim ? kPrimary : Colors.white,
-          border: Border.all(color: kPrimary),
-          borderRadius: BorderRadius.circular(3),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              diklaim ? Icons.check_circle_outline : Icons.radio_button_off,
-              size: 12,
-              color: diklaim ? Colors.white : kPrimary,
-            ),
-            const SizedBox(width: 4),
-            Text(
-              diklaim ? 'DIKLAIM' : 'Tandai Diklaim',
-              style: TextStyle(
-                fontSize: 11,
-                fontWeight: FontWeight.w700,
-                color: diklaim ? Colors.white : kPrimary,
-              ),
-            ),
-          ],
-        ),
-      ),
     );
   }
 }

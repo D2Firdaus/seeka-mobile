@@ -41,13 +41,8 @@ class StatusBadge extends StatelessWidget {
 
 class ReportCard extends StatelessWidget {
   final Laporan laporan;
-  final String backLabel;
 
-  const ReportCard({
-    super.key,
-    required this.laporan,
-    this.backLabel = 'beranda',
-  });
+  const ReportCard({super.key, required this.laporan});
 
   @override
   Widget build(BuildContext context) {
@@ -58,6 +53,7 @@ class ReportCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(3),
+        border: Border.all(color: kBorder),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -132,8 +128,7 @@ class ReportCard extends StatelessWidget {
               onPressed: () {
                 Navigator.of(context).push(
                   MaterialPageRoute(
-                    builder: (_) =>
-                        DetailScreen(laporan: l, backLabel: backLabel),
+                    builder: (_) => DetailScreen(laporan: l),
                   ),
                 );
               },

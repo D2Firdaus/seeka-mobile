@@ -61,5 +61,17 @@ ThemeData seekaTheme = ThemeData(
     type: BottomNavigationBarType.fixed,
     showUnselectedLabels: true,
   ),
+  dialogTheme: const DialogThemeData(
+    backgroundColor: Colors.white,
+    surfaceTintColor: Colors.transparent,
+  ),
+  bottomSheetTheme: const BottomSheetThemeData(
+    backgroundColor: Colors.white,
+    surfaceTintColor: Colors.transparent,
+  ),
+  datePickerTheme: const DatePickerThemeData(
+    backgroundColor: Colors.white,
+    surfaceTintColor: Colors.transparent,
+  ),
   snackBarTheme: const SnackBarThemeData(behavior: SnackBarBehavior.floating),
 );

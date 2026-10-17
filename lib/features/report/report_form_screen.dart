@@ -13,16 +13,12 @@ import '../../shared/app_image.dart';
 class ReportFormScreen extends StatefulWidget {
   final TipeLaporan tipe;
   final Laporan? existing;
-  final String backLabel;
-  final VoidCallback onGoHome;
   final VoidCallback onSubmitted;
 
   const ReportFormScreen({
     super.key,
     required this.tipe,
     this.existing,
-    this.backLabel = 'beranda',
-    required this.onGoHome,
     required this.onSubmitted,
   });
 
@@ -37,6 +33,7 @@ class _ReportFormScreenState extends State<ReportFormScreen>
   final _namaCtrl = TextEditingController();
   final _descCtrl = TextEditingController();
   final _waCtrl = TextEditingController();
+  final _tanggalCtrl = TextEditingController();
 
   String? _kategori;
   String? _lokasi;
@@ -62,6 +59,7 @@ class _ReportFormScreenState extends State<ReportFormScreen>
       _waCtrl.text = e.nomorWa;
       _kategori = e.kategori;
       _tanggal = e.tanggal;
+      _tanggalCtrl.text = formatTanggal(e.tanggal);
       _fotoPaths.addAll(e.fotoPaths);
       _setuju = true;
     }
@@ -72,6 +70,7 @@ class _ReportFormScreenState extends State<ReportFormScreen>
     _namaCtrl.dispose();
     _descCtrl.dispose();
     _waCtrl.dispose();
+    _tanggalCtrl.dispose();
     super.dispose();
   }
 
@@ -92,14 +91,6 @@ class _ReportFormScreenState extends State<ReportFormScreen>
         ? 'Menemukan barang? Ceritakan detailnya agar lebih mudah dikenali.'
         : 'Kehilangan? Ceritakan detailnya agar lebih mudah dikenali.';
   }
-
-  String get _lokasiJudul => _isPenemuan
-      ? 'Lokasi dan tanggal Penemuan'
-      : 'Lokasi dan tanggal kehilangan';
-
-  String get _lokasiSubtitle => _isPenemuan
-      ? 'Isi lokasi barang terlihat dan tanggal penemuan.'
-      : 'Isi lokasi terakhir barang terlihat dan perkiraan tanggal kehilangan.';
 
   String get _lokasiLabel =>
       _isPenemuan ? 'Lokasi penemuan' : 'Lokasi kehilangan';
@@ -151,7 +142,12 @@ class _ReportFormScreenState extends State<ReportFormScreen>
         child: child!,
       ),
     );
-    if (picked != null) setState(() => _tanggal = picked);
+    if (picked != null) {
+      setState(() {
+        _tanggal = picked;
+        _tanggalCtrl.text = formatTanggal(picked);
+      });
+    }
   }
 
   void _reset() {
@@ -159,6 +155,7 @@ class _ReportFormScreenState extends State<ReportFormScreen>
     _namaCtrl.clear();
     _descCtrl.clear();
     _waCtrl.clear();
+    _tanggalCtrl.clear();
     setState(() {
       _kategori = null;
       _lokasi = null;
@@ -249,50 +246,52 @@ class _ReportFormScreenState extends State<ReportFormScreen>
     super.build(context);
     return Scaffold(
       backgroundColor: Colors.white,
+      appBar: _isEdit
+          ? AppBar(
+              backgroundColor: Colors.white,
+              surfaceTintColor: Colors.white,
+              elevation: 0,
+              leading: IconButton(
+                icon: const Icon(Icons.arrow_back, color: kPrimary),
+                onPressed: () => Navigator.of(context).pop(),
+              ),
+              title: Text(
+                _judul,
+                style: const TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w700,
+                  color: kTextDark,
+                ),
+              ),
+            )
+          : null,
       body: SafeArea(
         child: Form(
           key: _formKey,
           child: ListView(
             padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
             children: [
-              InkWell(
-                onTap: widget.onGoHome,
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const Icon(Icons.arrow_back, size: 16, color: kPrimary),
-                    const SizedBox(width: 4),
-                    Text(
-                      'Kembali ke ${widget.backLabel}',
-                      style: const TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                        color: kPrimary,
-                      ),
-                    ),
-                  ],
+              if (!_isEdit) ...[
+                Text(
+                  _judul,
+                  style: const TextStyle(
+                    fontSize: 26,
+                    fontWeight: FontWeight.w700,
+                    color: kTextDark,
+                  ),
                 ),
-              ),
-              const SizedBox(height: 12),
-              Text(
-                _judul,
-                style: const TextStyle(
-                  fontSize: 26,
-                  fontWeight: FontWeight.w700,
-                  color: kTextDark,
+                const SizedBox(height: 6),
+                Text(
+                  _subtitle,
+                  style: const TextStyle(
+                    fontSize: 14,
+                    color: kTextGray,
+                    height: 1.35,
+                  ),
                 ),
-              ),
-              const SizedBox(height: 6),
-              Text(
-                _subtitle,
-                style: const TextStyle(
-                  fontSize: 14,
-                  color: kTextGray,
-                  height: 1.35,
-                ),
-              ),
+              ],
               if (_isEdit) ...[
-                const SizedBox(height: 20),
+                const SizedBox(height: 8),
                 Row(
                   children: [
                     const Expanded(
@@ -341,14 +340,17 @@ class _ReportFormScreenState extends State<ReportFormScreen>
                   Expanded(
                     child: _LabeledField(
                       label: 'Nama barang *',
-                      child: TextFormField(
-                        controller: _namaCtrl,
-                        decoration: const InputDecoration(
-                          hintText: 'Judul Barang',
+                      child: SizedBox(
+                        height: 56,
+                        child: TextFormField(
+                          controller: _namaCtrl,
+                          decoration: const InputDecoration(
+                            hintText: 'Judul Barang',
+                          ),
+                          validator: (v) => (v == null || v.trim().isEmpty)
+                              ? 'Wajib diisi'
+                              : null,
                         ),
-                        validator: (v) => (v == null || v.trim().isEmpty)
-                            ? 'Wajib diisi'
-                            : null,
                       ),
                     ),
                   ),
@@ -356,25 +358,29 @@ class _ReportFormScreenState extends State<ReportFormScreen>
                   Expanded(
                     child: _LabeledField(
                       label: 'Kategori *',
-                      child: DropdownButtonFormField<String>(
-                        key: ValueKey('kategori-$_kategori'),
-                        initialValue: _kategori,
-                        hint: const Text('Kategori Barang'),
-                        isExpanded: true,
-                        icon: const Icon(
-                          Icons.keyboard_arrow_down,
-                          color: kTextGray,
+                      child: SizedBox(
+                        height: 56,
+                        child: DropdownButtonFormField<String>(
+                          key: ValueKey('kategori-$_kategori'),
+                          initialValue: _kategori,
+                          hint: const Text('Kategori Barang'),
+                          isExpanded: true,
+                          icon: const Icon(
+                            Icons.keyboard_arrow_down,
+                            color: kTextGray,
+                          ),
+                          items: _opsiDenganNilaiLama(
+                            ReferensiStore.instance.kategoriAktif,
+                            _kategori,
+                          )
+                              .map(
+                                (k) =>
+                                    DropdownMenuItem(value: k, child: Text(k)),
+                              )
+                              .toList(),
+                          onChanged: (v) => setState(() => _kategori = v),
+                          validator: (v) => v == null ? 'Pilih' : null,
                         ),
-                        items: _opsiDenganNilaiLama(
-                          ReferensiStore.instance.kategoriAktif,
-                          _kategori,
-                        )
-                            .map(
-                              (k) => DropdownMenuItem(value: k, child: Text(k)),
-                            )
-                            .toList(),
-                        onChanged: (v) => setState(() => _kategori = v),
-                        validator: (v) => v == null ? 'Pilih' : null,
                       ),
                     ),
                   ),
@@ -399,6 +405,91 @@ class _ReportFormScreenState extends State<ReportFormScreen>
                 style: TextStyle(fontSize: 11, color: kTextGray),
               ),
               const SizedBox(height: 16),
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.fromLTRB(0, 14, 0, 14),
+                decoration: const BoxDecoration(color: Colors.white),
+                child: FormField<String>(
+                  validator: (_) =>
+                      _tanggal == null ? 'Tanggal wajib dipilih' : null,
+                  builder: (field) => Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Expanded(
+                            child: _LabeledField(
+                              label: '$_lokasiLabel *',
+                              child: SizedBox(
+                                height: 56,
+                                child: DropdownButtonFormField<String>(
+                                  key: ValueKey('lokasi-$_lokasi'),
+                                  initialValue: _lokasi,
+                                  hint: const Text('Pilih lokasi'),
+                                  isExpanded: true,
+                                  icon: const Icon(
+                                    Icons.keyboard_arrow_down,
+                                    color: kTextGray,
+                                  ),
+                                  items: _opsiDenganNilaiLama(
+                                    ReferensiStore.instance.lokasiAktif,
+                                    _lokasi,
+                                  )
+                                      .map(
+                                        (l) => DropdownMenuItem(
+                                          value: l,
+                                          child: Text(l),
+                                        ),
+                                      )
+                                      .toList(),
+                                  onChanged: (v) =>
+                                      setState(() => _lokasi = v),
+                                  validator: (v) => v == null ? 'Pilih' : null,
+                                ),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: _LabeledField(
+                              label: '$_tanggalLabel *',
+                              child: SizedBox(
+                                height: 56,
+                                child: TextFormField(
+                                  controller: _tanggalCtrl,
+                                  readOnly: true,
+                                  onTap: _pickTanggal,
+                                  decoration: InputDecoration(
+                                    hintText: 'hh / bb / tttt',
+                                    suffixIcon: const Icon(
+                                      Icons.calendar_today_outlined,
+                                      color: kTextGray,
+                                      size: 18,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      if (field.hasError)
+                        Padding(
+                          padding: const EdgeInsets.only(top: 6),
+                          child: Text(
+                            field.errorText!,
+                            style: const TextStyle(
+                              fontSize: 11,
+                              color: Colors.red,
+                            ),
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
               const Text(
                 'Foto barang',
                 style: TextStyle(
@@ -417,75 +508,10 @@ class _ReportFormScreenState extends State<ReportFormScreen>
                 },
               ),
               const SizedBox(height: 16),
-              _SectionCard(
-                title: _lokasiJudul,
-                subtitle: _lokasiSubtitle,
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Expanded(
-                      child: _LabeledField(
-                        label: '$_lokasiLabel *',
-                        child: DropdownButtonFormField<String>(
-                          key: ValueKey('lokasi-$_lokasi'),
-                          initialValue: _lokasi,
-                          hint: const Text('Pilih lokasi'),
-                          isExpanded: true,
-                          icon: const Icon(
-                            Icons.keyboard_arrow_down,
-                            color: kTextGray,
-                          ),
-                          items: _opsiDenganNilaiLama(
-                            ReferensiStore.instance.lokasiAktif,
-                            _lokasi,
-                          )
-                              .map(
-                                (l) =>
-                                    DropdownMenuItem(value: l, child: Text(l)),
-                              )
-                              .toList(),
-                          onChanged: (v) => setState(() => _lokasi = v),
-                          validator: (v) => v == null ? 'Pilih' : null,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: _LabeledField(
-                        label: '$_tanggalLabel *',
-                        child: InkWell(
-                          onTap: _pickTanggal,
-                          child: InputDecorator(
-                            decoration: InputDecoration(
-                              hintText: 'hh / bb / tttt',
-                              suffixIcon: const Icon(
-                                Icons.calendar_today_outlined,
-                                color: kTextGray,
-                                size: 18,
-                              ),
-                            ),
-                            child: Text(
-                              _tanggal == null ? '' : formatTanggal(_tanggal!),
-                              style: TextStyle(
-                                fontSize: 14,
-                                color: _tanggal == null
-                                    ? const Color(0xFF9CA3AF)
-                                    : kTextDark,
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-                validator: () =>
-                    _tanggal == null ? 'Tanggal wajib dipilih' : null,
-              ),
-              const SizedBox(height: 16),
-              _SectionCard(
-                title: 'Informasi kontak pelapor',
-                subtitle: 'Cantumkan kontak aktif yang dapat dihubungi.',
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.fromLTRB(0, 14, 0, 0),
+                decoration: const BoxDecoration(color: Colors.white),
                 child: _LabeledField(
                   label: 'Nomor WhatsApp *',
                   child: TextFormField(
@@ -498,13 +524,19 @@ class _ReportFormScreenState extends State<ReportFormScreen>
                       final t = v?.trim() ?? '';
                       if (t.isEmpty) return 'Wajib diisi';
                       final cleaned = t.replaceAll(RegExp(r'[\s\-]'), '');
-                      if (!RegExp(r'^(\+?62|0)\d{8,13}$').hasMatch(cleaned)) {
+                      if (!RegExp(r'^(\+?62|0)\d{8,13}$')
+                          .hasMatch(cleaned)) {
                         return 'Format nomor tidak valid';
                       }
                       return null;
                     },
                   ),
                 ),
+              ),
+              const SizedBox(height: 6),
+              const Text(
+                'Cantumkan nomor aktif yang dapat dihubungi calon penemu atau pemilik barang.',
+                style: TextStyle(fontSize: 11, color: kTextGray),
               ),
               const SizedBox(height: 16),
               Row(
@@ -657,73 +689,6 @@ class _LabeledField extends StatelessWidget {
         const SizedBox(height: 8),
         child,
       ],
-    );
-  }
-}
-
-class _SectionCard extends StatelessWidget {
-  final String title;
-  final String subtitle;
-  final Widget child;
-  final String? Function()? validator;
-
-  const _SectionCard({
-    required this.title,
-    required this.subtitle,
-    required this.child,
-    this.validator,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(3),
-        border: Border.all(color: kBorder),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            title,
-            style: const TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.w700,
-              color: kTextDark,
-            ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            subtitle,
-            style: const TextStyle(
-              fontSize: 12,
-              color: kTextGray,
-              height: 1.35,
-            ),
-          ),
-          const SizedBox(height: 14),
-          FormField<String>(
-            validator: (_) => validator?.call(),
-            builder: (field) => Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                child,
-                if (field.hasError)
-                  Padding(
-                    padding: const EdgeInsets.only(top: 6),
-                    child: Text(
-                      field.errorText!,
-                      style: const TextStyle(fontSize: 11, color: Colors.red),
-                    ),
-                  ),
-              ],
-            ),
-          ),
-        ],
-      ),
     );
   }
 }

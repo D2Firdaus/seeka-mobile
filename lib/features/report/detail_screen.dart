@@ -5,17 +5,13 @@ import '../../core/theme.dart';
 import '../../core/utils/formatters.dart';
 import '../../data/models.dart';
 import '../../shared/app_image.dart';
+import '../../shared/lock_icon.dart';
 import '../../shared/report_card.dart';
 
 class DetailScreen extends StatefulWidget {
   final Laporan laporan;
-  final String backLabel;
 
-  const DetailScreen({
-    super.key,
-    required this.laporan,
-    this.backLabel = 'beranda',
-  });
+  const DetailScreen({super.key, required this.laporan});
 
   @override
   State<DetailScreen> createState() => _DetailScreenState();
@@ -47,54 +43,29 @@ class _DetailScreenState extends State<DetailScreen> {
 
     return Scaffold(
       backgroundColor: kPrimary,
+      appBar: AppBar(
+        backgroundColor: kPrimary,
+        surfaceTintColor: kPrimary,
+        elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back, color: Colors.white),
+          onPressed: () => Navigator.of(context).pop(),
+        ),
+        title: const Text(
+          'Detail Barang',
+          style: TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.w700,
+            color: Colors.white,
+          ),
+        ),
+      ),
       body: SafeArea(
         child: Column(
           children: [
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
-              child: SizedBox(
-                width: double.infinity,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    InkWell(
-                      onTap: () => Navigator.of(context).pop(),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          const Icon(
-                            Icons.arrow_back,
-                            size: 16,
-                            color: Colors.white,
-                          ),
-                          const SizedBox(width: 4),
-                          Text(
-                            'Kembali ke ${widget.backLabel}',
-                            style: const TextStyle(
-                              fontSize: 12,
-                              fontWeight: FontWeight.w600,
-                              color: Colors.white,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 10),
-                    const Text(
-                      'Detail barang',
-                      style: TextStyle(
-                        fontSize: 26,
-                        fontWeight: FontWeight.w700,
-                        color: Colors.white,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
             Expanded(
               child: ListView(
-                padding: const EdgeInsets.fromLTRB(10, 4, 10, 16),
+                padding: const EdgeInsets.fromLTRB(10, 12, 10, 16),
                 children: [
                   Container(
                     padding: const EdgeInsets.all(12),
@@ -262,10 +233,7 @@ class _DetailScreenState extends State<DetailScreen> {
                                     ),
                                   ),
                                   onPressed: null,
-                                  icon: const Icon(
-                                    Icons.lock_outline,
-                                    size: 20,
-                                  ),
+                                  icon: const LockIcon(size: 20),
                                   label: const Text('Barang sudah diklaim'),
                                 )
                               : ElevatedButton.icon(

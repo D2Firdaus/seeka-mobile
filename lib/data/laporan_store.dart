@@ -145,10 +145,14 @@ class LaporanStore extends ChangeNotifier {
       result = result.where((l) => l.lokasi == lokasi).toList();
     }
     if (tipe != null && tipe != 'Semua') {
-      final t = tipe == 'Ditemukan'
-          ? TipeLaporan.penemuan
-          : TipeLaporan.kehilangan;
-      result = result.where((l) => l.tipe == t).toList();
+      if (tipe == 'Diklaim') {
+        result = result.where((l) => l.diklaim).toList();
+      } else {
+        final t = tipe == 'Ditemukan'
+            ? TipeLaporan.penemuan
+            : TipeLaporan.kehilangan;
+        result = result.where((l) => l.tipe == t).toList();
+      }
     }
     if (tanggalRange != null) {
       result = result
