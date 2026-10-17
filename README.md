@@ -108,7 +108,7 @@ State management memakai `ChangeNotifier` bawaan Flutter + `ListenableBuilder` â
     </td>
   </tr>
   <tr>
-    <td width="100%" align="center">
+    <td width="100%" colspan="2" align="center">
       <img src="docs/screenshots/detail.png" alt="Detail Barang" /><br/>
       <sub><b>Detail Barang</b></sub>
     </td>
