@@ -32,11 +32,11 @@ flutter run            # pilih device: Android / iOS / Chrome / desktop
 
 ```
 lib/
-├── main.dart          # urutan init: Prefs → AuthStore → ReferensiStore → LaporanStore
+├── main.dart          # urutan init: Prefs → migrasi → AuthStore → ReferensiStore → LaporanStore
 ├── app.dart           # MaterialApp + auth gate (login ↔ MainShell)
 ├── core/              # theme.dart, constants.dart, utils/ (formatters, foto_store)
-├── data/              # prefs.dart, models.dart, + store ChangeNotifier:
-│                      #   auth_store, referensi_store, laporan_store
+├── data/              # prefs.dart, models.dart (skema ERD), migrasi.dart,
+│                      # + store ChangeNotifier: auth_store, referensi_store, laporan_store
 ├── features/
 │   ├── auth/          # login, register
 │   ├── home/          # beranda (search/filter in-place)
