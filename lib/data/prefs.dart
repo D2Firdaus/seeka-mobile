@@ -41,8 +41,12 @@ class Prefs {
   }
 }
 
+const kKeySchemaVersion = 'schema_version';
+const kSchemaVersion = '1';
+
 const kKeyUsers = 'users_json';
-const kKeySessionEmail = 'session_email';
-const kKeyLaporan = 'laporan_json';
-const kKeyKategori = 'kategori_json';
-const kKeyLokasi = 'lokasi_json';
+const kKeySessionUserId = 'session_user_id';
+const kKeyCategories = 'categories_json';
+const kKeyLocations = 'locations_json';
+const kKeyItems = 'items_json';
+const kKeyItemImages = 'item_images_json';

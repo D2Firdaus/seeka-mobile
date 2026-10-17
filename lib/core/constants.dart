@@ -1,5 +1,8 @@
 import '../data/models.dart';
 
+/// Id user utk laporan demo (soft delete — hanya sbg atribusi pelapor).
+const kDemoUserId = 2;
+
 /// Seed default kategori — sumber awal data ReferensiStore.
 final kSeedKategori = [
   'Dompet',
@@ -8,7 +11,7 @@ final kSeedKategori = [
   'Tas',
   'Dokumen',
   'Lainnya',
-].map((n) => RefItem(nama: n)).toList();
+].asMap().entries.map((e) => RefItem(id: e.key + 1, name: e.value)).toList();
 
 /// Seed default lokasi — sumber awal data ReferensiStore.
 final kSeedLokasi = [
@@ -19,4 +22,4 @@ final kSeedLokasi = [
   'Aula',
   'Ruang Dosen',
   'Gerbang Utama',
-].map((n) => RefItem(nama: n)).toList();
+].asMap().entries.map((e) => RefItem(id: e.key + 1, name: e.value)).toList();

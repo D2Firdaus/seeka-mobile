@@ -11,8 +11,8 @@ import '../../data/referensi_store.dart';
 import '../../shared/app_image.dart';
 
 class ReportFormScreen extends StatefulWidget {
-  final TipeLaporan tipe;
-  final Laporan? existing;
+  final ItemType tipe;
+  final Item? existing;
   final VoidCallback onSubmitted;
 
   const ReportFormScreen({
@@ -28,15 +28,15 @@ class ReportFormScreen extends StatefulWidget {
 
 class _ReportFormScreenState extends State<ReportFormScreen>
     with AutomaticKeepAliveClientMixin {
-  late TipeLaporan _tipe;
+  late ItemType _tipe;
   final _formKey = GlobalKey<FormState>();
   final _namaCtrl = TextEditingController();
   final _descCtrl = TextEditingController();
   final _waCtrl = TextEditingController();
   final _tanggalCtrl = TextEditingController();
 
-  String? _kategori;
-  String? _lokasi;
+  int? _kategoriId;
+  int? _lokasiId;
   DateTime? _tanggal;
   final List<String> _fotoPaths = [];
   bool _setuju = false;
@@ -50,17 +50,17 @@ class _ReportFormScreenState extends State<ReportFormScreen>
   @override
   void initState() {
     super.initState();
-    _tipe = widget.existing?.tipe ?? widget.tipe;
+    _tipe = widget.existing?.type ?? widget.tipe;
     final e = widget.existing;
     if (e != null) {
-      _namaCtrl.text = e.namaBarang;
-      _descCtrl.text = e.deskripsi;
-      _lokasi = e.lokasi;
+      _namaCtrl.text = e.title;
+      _descCtrl.text = e.description;
+      _lokasiId = e.locationId;
       _waCtrl.text = e.nomorWa;
-      _kategori = e.kategori;
-      _tanggal = e.tanggal;
-      _tanggalCtrl.text = formatTanggal(e.tanggal);
-      _fotoPaths.addAll(e.fotoPaths);
+      _kategoriId = e.categoryId;
+      _tanggal = e.dateEvent;
+      _tanggalCtrl.text = formatTanggal(e.dateEvent);
+      _fotoPaths.addAll(LaporanStore.instance.fotoOf(e.id));
       _setuju = true;
     }
   }
@@ -76,7 +76,7 @@ class _ReportFormScreenState extends State<ReportFormScreen>
 
   bool get _isEdit => widget.existing != null;
 
-  bool get _isPenemuan => _tipe == TipeLaporan.penemuan;
+  bool get _isPenemuan => _tipe == ItemType.ditemukan;
 
   String get _judul {
     final base = _isPenemuan ? 'Laporan Penemuan' : 'Laporan Kehilangan';
@@ -100,8 +100,10 @@ class _ReportFormScreenState extends State<ReportFormScreen>
 
   /// Gabungkan opsi aktif dgn nilai lama (mis. kategori/lokasi terarsip
   /// pada laporan yang sedang diedit) supaya tetap tampil di dropdown.
-  List<String> _opsiDenganNilaiLama(List<String> aktif, String? nilaiLama) {
-    if (nilaiLama == null || aktif.contains(nilaiLama)) return aktif;
+  List<RefItem> _opsiDenganNilaiLama(List<RefItem> aktif, RefItem? nilaiLama) {
+    if (nilaiLama == null || aktif.any((r) => r.id == nilaiLama.id)) {
+      return aktif;
+    }
     return [...aktif, nilaiLama];
   }
 
@@ -157,8 +159,8 @@ class _ReportFormScreenState extends State<ReportFormScreen>
     _waCtrl.clear();
     _tanggalCtrl.clear();
     setState(() {
-      _kategori = null;
-      _lokasi = null;
+      _kategoriId = null;
+      _lokasiId = null;
       _tanggal = null;
       _fotoPaths.clear();
       _setuju = false;
@@ -180,22 +182,19 @@ class _ReportFormScreenState extends State<ReportFormScreen>
     final user = AuthStore.instance.currentUser;
     if (_isEdit) {
       final old = widget.existing!;
-      final oldPaths = Set<String>.from(old.fotoPaths);
+      final oldPaths = Set<String>.from(LaporanStore.instance.fotoOf(old.id));
       LaporanStore.instance.updateLaporan(
-        Laporan(
-          id: old.id,
-          tipe: _tipe,
-          namaBarang: _namaCtrl.text.trim(),
-          kategori: _kategori!,
-          deskripsi: _descCtrl.text.trim(),
-          fotoPaths: List.from(_fotoPaths),
-          lokasi: _lokasi!,
-          tanggal: _tanggal!,
+        old.copyWith(
+          type: _tipe,
+          title: _namaCtrl.text.trim(),
+          categoryId: _kategoriId!,
+          description: _descCtrl.text.trim(),
+          locationId: _lokasiId!,
+          dateEvent: _tanggal!,
           nomorWa: _waCtrl.text.trim(),
-          pelapor: old.pelapor,
-          pelaporEmail: old.pelaporEmail,
-          status: old.status,
+          updatedAt: DateTime.now(),
         ),
+        List.from(_fotoPaths),
       );
       for (final p in oldPaths.difference(_fotoPaths.toSet())) {
         FotoStore.hapusFoto(p);
@@ -212,19 +211,18 @@ class _ReportFormScreenState extends State<ReportFormScreen>
       return;
     }
     LaporanStore.instance.addLaporan(
-      Laporan(
-        id: DateTime.now().millisecondsSinceEpoch.toString(),
-        tipe: _tipe,
-        namaBarang: _namaCtrl.text.trim(),
-        kategori: _kategori!,
-        deskripsi: _descCtrl.text.trim(),
-        fotoPaths: List.from(_fotoPaths),
-        lokasi: _lokasi!,
-        tanggal: _tanggal!,
+      Item(
+        id: DateTime.now().millisecondsSinceEpoch.toRadixString(36),
+        userId: user?.id ?? 0,
+        categoryId: _kategoriId!,
+        locationId: _lokasiId!,
+        type: _tipe,
+        title: _namaCtrl.text.trim(),
+        description: _descCtrl.text.trim(),
+        dateEvent: _tanggal!,
         nomorWa: _waCtrl.text.trim(),
-        pelapor: user?.nama ?? 'Anonim',
-        pelaporEmail: user?.email ?? '',
       ),
+      List.from(_fotoPaths),
     );
     setState(() => _submitting = false);
     _reset();
@@ -313,23 +311,23 @@ class _ReportFormScreenState extends State<ReportFormScreen>
                 const SizedBox(height: 10),
                 Row(
                   children: [
-                    Expanded(
-                      child: _JenisOption(
-                        label: 'Kehilangan',
-                        selected: _tipe == TipeLaporan.kehilangan,
-                        onTap: () =>
-                            setState(() => _tipe = TipeLaporan.kehilangan),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: _JenisOption(
-                        label: 'Penemuan',
-                        selected: _tipe == TipeLaporan.penemuan,
-                        onTap: () =>
-                            setState(() => _tipe = TipeLaporan.penemuan),
-                      ),
-                    ),
+                Expanded(
+                  child: _JenisOption(
+                    label: 'Kehilangan',
+                    selected: _tipe == ItemType.kehilangan,
+                    onTap: () =>
+                        setState(() => _tipe = ItemType.kehilangan),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: _JenisOption(
+                    label: 'Penemuan',
+                    selected: _tipe == ItemType.ditemukan,
+                    onTap: () =>
+                        setState(() => _tipe = ItemType.ditemukan),
+                  ),
+                ),
                   ],
                 ),
               ],
@@ -360,9 +358,9 @@ class _ReportFormScreenState extends State<ReportFormScreen>
                       label: 'Kategori *',
                       child: SizedBox(
                         height: 56,
-                        child: DropdownButtonFormField<String>(
-                          key: ValueKey('kategori-$_kategori'),
-                          initialValue: _kategori,
+                        child: DropdownButtonFormField<int>(
+                          key: ValueKey('kategori-$_kategoriId'),
+                          initialValue: _kategoriId,
                           hint: const Text('Kategori Barang'),
                           isExpanded: true,
                           icon: const Icon(
@@ -371,14 +369,18 @@ class _ReportFormScreenState extends State<ReportFormScreen>
                           ),
                           items: _opsiDenganNilaiLama(
                             ReferensiStore.instance.kategoriAktif,
-                            _kategori,
+                            ReferensiStore.instance.kategoriById(
+                              _kategoriId ?? -1,
+                            ),
                           )
                               .map(
-                                (k) =>
-                                    DropdownMenuItem(value: k, child: Text(k)),
+                                (k) => DropdownMenuItem(
+                                  value: k.id,
+                                  child: Text(k.name),
+                                ),
                               )
                               .toList(),
-                          onChanged: (v) => setState(() => _kategori = v),
+                          onChanged: (v) => setState(() => _kategoriId = v),
                           validator: (v) => v == null ? 'Pilih' : null,
                         ),
                       ),
@@ -423,9 +425,9 @@ class _ReportFormScreenState extends State<ReportFormScreen>
                               label: '$_lokasiLabel *',
                               child: SizedBox(
                                 height: 56,
-                                child: DropdownButtonFormField<String>(
-                                  key: ValueKey('lokasi-$_lokasi'),
-                                  initialValue: _lokasi,
+                                child: DropdownButtonFormField<int>(
+                                  key: ValueKey('lokasi-$_lokasiId'),
+                                  initialValue: _lokasiId,
                                   hint: const Text('Pilih lokasi'),
                                   isExpanded: true,
                                   icon: const Icon(
@@ -434,17 +436,19 @@ class _ReportFormScreenState extends State<ReportFormScreen>
                                   ),
                                   items: _opsiDenganNilaiLama(
                                     ReferensiStore.instance.lokasiAktif,
-                                    _lokasi,
+                                    ReferensiStore.instance.lokasiById(
+                                      _lokasiId ?? -1,
+                                    ),
                                   )
                                       .map(
                                         (l) => DropdownMenuItem(
-                                          value: l,
-                                          child: Text(l),
+                                          value: l.id,
+                                          child: Text(l.name),
                                         ),
                                       )
                                       .toList(),
                                   onChanged: (v) =>
-                                      setState(() => _lokasi = v),
+                                      setState(() => _lokasiId = v),
                                   validator: (v) => v == null ? 'Pilih' : null,
                                 ),
                               ),

@@ -164,18 +164,18 @@ class _TabReferensi extends StatelessWidget {
               initial: null,
               onSubmit: ReferensiStore.instance.addKategori,
             ),
-            onEdit: (nama) => _editDialog(
+            onEdit: (item) => _editDialog(
               context,
               title: 'Ubah kategori',
-              initial: nama,
-              onSubmit: (v) => ReferensiStore.instance.renameKategori(nama, v),
+              initial: item.name,
+              onSubmit: (v) => ReferensiStore.instance.renameKategori(item.id, v),
             ),
             onToggle: (item) => _konfirmasiArsip(
               context,
-              nama: item.nama,
+              nama: item.name,
               aktif: item.aktif,
               onYes: () =>
-                  ReferensiStore.instance.setKategoriAktif(item.nama, !item.aktif),
+                  ReferensiStore.instance.setKategoriAktif(item.id, !item.aktif),
             ),
           ),
           const SizedBox(height: 24),
@@ -188,18 +188,18 @@ class _TabReferensi extends StatelessWidget {
               initial: null,
               onSubmit: ReferensiStore.instance.addLokasi,
             ),
-            onEdit: (nama) => _editDialog(
+            onEdit: (item) => _editDialog(
               context,
               title: 'Ubah lokasi',
-              initial: nama,
-              onSubmit: (v) => ReferensiStore.instance.renameLokasi(nama, v),
+              initial: item.name,
+              onSubmit: (v) => ReferensiStore.instance.renameLokasi(item.id, v),
             ),
             onToggle: (item) => _konfirmasiArsip(
               context,
-              nama: item.nama,
+              nama: item.name,
               aktif: item.aktif,
               onYes: () =>
-                  ReferensiStore.instance.setLokasiAktif(item.nama, !item.aktif),
+                  ReferensiStore.instance.setLokasiAktif(item.id, !item.aktif),
             ),
           ),
         ],
@@ -212,7 +212,7 @@ class _RefSection extends StatelessWidget {
   final String title;
   final List<RefItem> items;
   final VoidCallback onAdd;
-  final ValueChanged<String> onEdit;
+  final ValueChanged<RefItem> onEdit;
   final ValueChanged<RefItem> onToggle;
 
   const _RefSection({
@@ -269,7 +269,7 @@ class _RefSection extends StatelessWidget {
               ListTile(
                 dense: true,
                 title: Text(
-                  items[i].nama,
+                  items[i].name,
                   style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w600,
@@ -297,7 +297,7 @@ class _RefSection extends StatelessWidget {
                     IconButton(
                       icon: const Icon(Icons.edit_outlined, color: kPrimary, size: 20),
                       tooltip: 'Ubah nama',
-                      onPressed: () => onEdit(items[i].nama),
+                      onPressed: () => onEdit(items[i]),
                     ),
                   ],
                 ),
@@ -321,8 +321,8 @@ class _TabLaporan extends StatefulWidget {
 }
 
 class _TabLaporanState extends State<_TabLaporan> {
-  String? _kategori;
-  String? _lokasi;
+  int? _kategoriId;
+  int? _lokasiId;
   String? _tipe;
   DateTimeRange? _tanggal;
   String _q = '';
@@ -337,11 +337,14 @@ class _TabLaporanState extends State<_TabLaporan> {
       builder: (ctx) => FilterSheet(
         title: 'Kategori',
         options: ['Semua', ...ReferensiStore.instance.semuaNamaKategori],
-        selected: _kategori ?? 'Semua',
+        selected: _kategoriId == null
+            ? 'Semua'
+            : ReferensiStore.instance.namaKategori(_kategoriId!),
       ),
     );
     if (pilihan != null) {
-      setState(() => _kategori = pilihan == 'Semua' ? null : pilihan);
+      setState(() => _kategoriId =
+          pilihan == 'Semua' ? null : ReferensiStore.instance.idKategoriDariNama(pilihan));
     }
   }
 
@@ -354,11 +357,14 @@ class _TabLaporanState extends State<_TabLaporan> {
       builder: (ctx) => FilterSheet(
         title: 'Lokasi',
         options: ['Semua', ...ReferensiStore.instance.semuaNamaLokasi],
-        selected: _lokasi ?? 'Semua',
+        selected: _lokasiId == null
+            ? 'Semua'
+            : ReferensiStore.instance.namaLokasi(_lokasiId!),
       ),
     );
     if (pilihan != null) {
-      setState(() => _lokasi = pilihan == 'Semua' ? null : pilihan);
+      setState(() => _lokasiId =
+          pilihan == 'Semua' ? null : ReferensiStore.instance.idLokasiDariNama(pilihan));
     }
   }
 
@@ -386,18 +392,18 @@ class _TabLaporanState extends State<_TabLaporan> {
     }
   }
 
-  List<Laporan> get _hasil {
-    var list = LaporanStore.instance.laporan;
-    if (_kategori != null) {
-      list = list.where((l) => l.kategori == _kategori).toList();
+  List<Item> get _hasil {
+    var list = LaporanStore.instance.items;
+    if (_kategoriId != null) {
+      list = list.where((l) => l.categoryId == _kategoriId).toList();
     }
-    if (_lokasi != null) {
-      list = list.where((l) => l.lokasi == _lokasi).toList();
+    if (_lokasiId != null) {
+      list = list.where((l) => l.locationId == _lokasiId).toList();
     }
     if (_tipe == 'Ditemukan') {
-      list = list.where((l) => l.tipe == TipeLaporan.penemuan).toList();
+      list = list.where((l) => l.type == ItemType.ditemukan).toList();
     } else if (_tipe == 'Kehilangan') {
-      list = list.where((l) => l.tipe == TipeLaporan.kehilangan).toList();
+      list = list.where((l) => l.type == ItemType.kehilangan).toList();
     } else if (_tipe == 'Diklaim') {
       list = list.where((l) => l.diklaim).toList();
     }
@@ -406,8 +412,8 @@ class _TabLaporanState extends State<_TabLaporan> {
       list = list
           .where(
             (l) =>
-                !l.tanggal.isBefore(range.start) &&
-                !l.tanggal.isAfter(range.end),
+                !l.dateEvent.isBefore(range.start) &&
+                !l.dateEvent.isAfter(range.end),
           )
           .toList();
     }
@@ -416,26 +422,26 @@ class _TabLaporanState extends State<_TabLaporan> {
       list = list
           .where(
             (l) =>
-                l.namaBarang.toLowerCase().contains(qq) ||
-                l.pelapor.toLowerCase().contains(qq),
+                l.title.toLowerCase().contains(qq) ||
+                AuthStore.instance.namaUser(l.userId).toLowerCase().contains(qq),
           )
           .toList();
     }
     final dd = _dd.trim().toLowerCase();
     if (dd.isNotEmpty) {
       list = list
-          .where((l) => l.deskripsi.toLowerCase().contains(dd))
+          .where((l) => l.description.toLowerCase().contains(dd))
           .toList();
     }
     return list;
   }
 
-  Future<void> _hapus(Laporan l) async {
+  Future<void> _hapus(Item l) async {
     final ya = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-        title: Text('Hapus "${l.namaBarang}"?'),
+        title: Text('Hapus "${l.title}"?'),
         content: const Text('Laporan dan fotonya akan dihapus permanen.'),
         actions: [
           TextButton(
@@ -454,7 +460,7 @@ class _TabLaporanState extends State<_TabLaporan> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('"${l.namaBarang}" dihapus.'),
+            content: Text('"${l.title}" dihapus.'),
             backgroundColor: kPrimary,
           ),
         );
@@ -462,11 +468,11 @@ class _TabLaporanState extends State<_TabLaporan> {
     }
   }
 
-  void _edit(Laporan l) {
+  void _edit(Item l) {
     Navigator.of(context).push(
       MaterialPageRoute(
         builder: (formCtx) => ReportFormScreen(
-          tipe: l.tipe,
+          tipe: l.type,
           existing: l,
           onSubmitted: () => Navigator.pop(formCtx),
         ),
@@ -510,13 +516,17 @@ class _TabLaporanState extends State<_TabLaporan> {
                   children: [
                     FilterChipButton(
                       label: 'Kategori',
-                      value: _kategori,
+                      value: _kategoriId == null
+                          ? null
+                          : ReferensiStore.instance.namaKategori(_kategoriId!),
                       onTap: _pilihKategori,
                     ),
                     const SizedBox(width: 10),
                     FilterChipButton(
                       label: 'Lokasi',
-                      value: _lokasi,
+                      value: _lokasiId == null
+                          ? null
+                          : ReferensiStore.instance.namaLokasi(_lokasiId!),
                       onTap: _pilihLokasi,
                     ),
                     const SizedBox(width: 10),
@@ -559,7 +569,7 @@ class _TabLaporanState extends State<_TabLaporan> {
                             vertical: 4,
                           ),
                           title: Text(
-                            l.namaBarang,
+                            l.title,
                             style: const TextStyle(
                               fontSize: 14,
                               fontWeight: FontWeight.w600,
@@ -567,7 +577,8 @@ class _TabLaporanState extends State<_TabLaporan> {
                             ),
                           ),
                           subtitle: Text(
-                            '${l.badge} · ${l.pelapor} · ${formatTanggal(l.tanggal)}'
+                            '${l.badge} · ${AuthStore.instance.namaUser(l.userId)}'
+                            ' · ${formatTanggal(l.dateEvent)}'
                             '${l.diklaim ? ' · Diklaim' : ''}',
                             style: const TextStyle(
                               fontSize: 12,
@@ -592,8 +603,8 @@ class _TabLaporanState extends State<_TabLaporan> {
                                   LaporanStore.instance.setStatusLaporan(
                                     l.id,
                                     l.diklaim
-                                        ? StatusLaporan.aktif
-                                        : StatusLaporan.diklaim,
+                                        ? ItemStatus.aktif
+                                        : ItemStatus.diklaim,
                                   );
                                 },
                               ),
@@ -635,12 +646,12 @@ class _TabLaporanState extends State<_TabLaporan> {
 class _TabPengguna extends StatelessWidget {
   const _TabPengguna();
 
-  Future<void> _hapus(BuildContext context, UserAccount u) async {
+  Future<void> _hapus(BuildContext context, User u) async {
     final ya = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-        title: Text('Hapus akun ${u.nama}?'),
+        title: Text('Hapus akun ${u.name}?'),
         content: const Text(
           'Akun akan dihapus. Laporan miliknya tetap tersimpan dengan nama pelapor lama.',
         ),
@@ -657,7 +668,7 @@ class _TabPengguna extends StatelessWidget {
       ),
     );
     if (ya == true && context.mounted) {
-      final err = AuthStore.instance.deleteUser(u.email);
+      final err = AuthStore.instance.deleteUser(u.id);
       if (err != null) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text(err), backgroundColor: Colors.red.shade700),
@@ -665,7 +676,7 @@ class _TabPengguna extends StatelessWidget {
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Akun ${u.nama} dihapus.'),
+            content: Text('Akun ${u.name} dihapus.'),
             backgroundColor: kPrimary,
           ),
         );
@@ -694,7 +705,7 @@ class _TabPengguna extends StatelessWidget {
                 children: [
                   Flexible(
                     child: Text(
-                      u.nama,
+                      u.name,
                       overflow: TextOverflow.ellipsis,
                       style: const TextStyle(
                         fontSize: 14,

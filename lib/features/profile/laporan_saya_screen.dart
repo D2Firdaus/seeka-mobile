@@ -23,8 +23,8 @@ class LaporanSayaScreen extends StatefulWidget {
 class _LaporanSayaScreenState extends State<LaporanSayaScreen> {
   final _searchCtrl = TextEditingController();
   final _descCtrl = TextEditingController();
-  String? _kategori;
-  String? _lokasi;
+  int? _kategoriId;
+  int? _lokasiId;
   String? _tipe;
   DateTimeRange? _tanggal;
 
@@ -44,11 +44,14 @@ class _LaporanSayaScreenState extends State<LaporanSayaScreen> {
       builder: (ctx) => FilterSheet(
         title: 'Kategori',
         options: ['Semua', ...ReferensiStore.instance.semuaNamaKategori],
-        selected: _kategori ?? 'Semua',
+        selected: _kategoriId == null
+            ? 'Semua'
+            : ReferensiStore.instance.namaKategori(_kategoriId!),
       ),
     );
     if (pilihan != null) {
-      setState(() => _kategori = pilihan == 'Semua' ? null : pilihan);
+      setState(() => _kategoriId =
+          pilihan == 'Semua' ? null : ReferensiStore.instance.idKategoriDariNama(pilihan));
     }
   }
 
@@ -61,11 +64,14 @@ class _LaporanSayaScreenState extends State<LaporanSayaScreen> {
       builder: (ctx) => FilterSheet(
         title: 'Lokasi',
         options: ['Semua', ...ReferensiStore.instance.semuaNamaLokasi],
-        selected: _lokasi ?? 'Semua',
+        selected: _lokasiId == null
+            ? 'Semua'
+            : ReferensiStore.instance.namaLokasi(_lokasiId!),
       ),
     );
     if (pilihan != null) {
-      setState(() => _lokasi = pilihan == 'Semua' ? null : pilihan);
+      setState(() => _lokasiId =
+          pilihan == 'Semua' ? null : ReferensiStore.instance.idLokasiDariNama(pilihan));
     }
   }
 
@@ -93,17 +99,17 @@ class _LaporanSayaScreenState extends State<LaporanSayaScreen> {
     }
   }
 
-  List<Laporan> _filter(List<Laporan> list) {
-    if (_kategori != null) {
-      list = list.where((l) => l.kategori == _kategori).toList();
+  List<Item> _filter(List<Item> list) {
+    if (_kategoriId != null) {
+      list = list.where((l) => l.categoryId == _kategoriId).toList();
     }
-    if (_lokasi != null) {
-      list = list.where((l) => l.lokasi == _lokasi).toList();
+    if (_lokasiId != null) {
+      list = list.where((l) => l.locationId == _lokasiId).toList();
     }
     if (_tipe == 'Ditemukan') {
-      list = list.where((l) => l.tipe == TipeLaporan.penemuan).toList();
+      list = list.where((l) => l.type == ItemType.ditemukan).toList();
     } else if (_tipe == 'Kehilangan') {
-      list = list.where((l) => l.tipe == TipeLaporan.kehilangan).toList();
+      list = list.where((l) => l.type == ItemType.kehilangan).toList();
     } else if (_tipe == 'Diklaim') {
       list = list.where((l) => l.diklaim).toList();
     }
@@ -112,31 +118,29 @@ class _LaporanSayaScreenState extends State<LaporanSayaScreen> {
       list = list
           .where(
             (l) =>
-                !l.tanggal.isBefore(range.start) &&
-                !l.tanggal.isAfter(range.end),
+                !l.dateEvent.isBefore(range.start) &&
+                !l.dateEvent.isAfter(range.end),
           )
           .toList();
     }
     final q = _searchCtrl.text.trim().toLowerCase();
     if (q.isNotEmpty) {
-      list = list
-          .where((l) => l.namaBarang.toLowerCase().contains(q))
-          .toList();
+      list = list.where((l) => l.title.toLowerCase().contains(q)).toList();
     }
     final dd = _descCtrl.text.trim().toLowerCase();
     if (dd.isNotEmpty) {
       list = list
-          .where((l) => l.deskripsi.toLowerCase().contains(dd))
+          .where((l) => l.description.toLowerCase().contains(dd))
           .toList();
     }
     return list;
   }
 
-  void _edit(Laporan l) {
+  void _edit(Item l) {
     Navigator.of(context).push(
       MaterialPageRoute(
         builder: (formCtx) => ReportFormScreen(
-          tipe: l.tipe,
+          tipe: l.type,
           existing: l,
           onSubmitted: () => Navigator.pop(formCtx),
         ),
@@ -144,27 +148,27 @@ class _LaporanSayaScreenState extends State<LaporanSayaScreen> {
     );
   }
 
-  void _toggleStatus(Laporan l) {
-    final next = l.diklaim ? StatusLaporan.aktif : StatusLaporan.diklaim;
+  void _toggleStatus(Item l) {
+    final next = l.diklaim ? ItemStatus.aktif : ItemStatus.diklaim;
     LaporanStore.instance.setStatusLaporan(l.id, next);
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(
-          next == StatusLaporan.diklaim
-              ? '"${l.namaBarang}" ditandai sebagai diklaim.'
-              : 'Status "${l.namaBarang}" diaktifkan kembali.',
+          next == ItemStatus.diklaim
+              ? '"${l.title}" ditandai sebagai diklaim.'
+              : 'Status "${l.title}" diaktifkan kembali.',
         ),
         backgroundColor: kPrimary,
       ),
     );
   }
 
-  Future<void> _hapus(Laporan l) async {
+  Future<void> _hapus(Item l) async {
     final ya = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-        title: Text('Hapus "${l.namaBarang}"?'),
+        title: Text('Hapus "${l.title}"?'),
         content: const Text('Laporan dan fotonya akan dihapus permanen.'),
         actions: [
           TextButton(
@@ -183,7 +187,7 @@ class _LaporanSayaScreenState extends State<LaporanSayaScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('"${l.namaBarang}" dihapus.'),
+            content: Text('"${l.title}" dihapus.'),
             backgroundColor: kPrimary,
           ),
         );
@@ -206,8 +210,8 @@ class _LaporanSayaScreenState extends State<LaporanSayaScreen> {
     final user = AuthStore.instance.currentUser;
     final semua =
         user == null
-            ? <Laporan>[]
-            : LaporanStore.instance.laporanSaya(user.email);
+            ? <Item>[]
+            : LaporanStore.instance.laporanSaya(user.id);
     final hasil = _filter(semua);
 
     return Scaffold(
@@ -260,13 +264,17 @@ class _LaporanSayaScreenState extends State<LaporanSayaScreen> {
                 children: [
                   FilterChipButton(
                     label: 'Kategori',
-                    value: _kategori,
+                    value: _kategoriId == null
+                        ? null
+                        : ReferensiStore.instance.namaKategori(_kategoriId!),
                     onTap: _pilihKategori,
                   ),
                   const SizedBox(width: 10),
                   FilterChipButton(
                     label: 'Lokasi',
-                    value: _lokasi,
+                    value: _lokasiId == null
+                        ? null
+                        : ReferensiStore.instance.namaLokasi(_lokasiId!),
                     onTap: _pilihLokasi,
                   ),
                   const SizedBox(width: 10),
@@ -316,7 +324,7 @@ class _LaporanSayaScreenState extends State<LaporanSayaScreen> {
                           vertical: 4,
                         ),
                         title: Text(
-                          l.namaBarang,
+                          l.title,
                           style: const TextStyle(
                             fontSize: 14,
                             fontWeight: FontWeight.w600,
@@ -324,7 +332,7 @@ class _LaporanSayaScreenState extends State<LaporanSayaScreen> {
                           ),
                         ),
                         subtitle: Text(
-                          '${l.badge} · ${formatTanggal(l.tanggal)}'
+                          '${l.badge} · ${formatTanggal(l.dateEvent)}'
                           '${l.diklaim ? ' · Diklaim' : ''}',
                           style: const TextStyle(
                             fontSize: 12,

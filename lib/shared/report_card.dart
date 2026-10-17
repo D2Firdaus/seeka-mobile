@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 
 import '../core/theme.dart';
 import '../core/utils/formatters.dart';
+import '../data/laporan_store.dart';
 import '../data/models.dart';
+import '../data/referensi_store.dart';
 import '../features/report/detail_screen.dart';
 import 'app_image.dart';
 
@@ -40,13 +42,14 @@ class StatusBadge extends StatelessWidget {
 }
 
 class ReportCard extends StatelessWidget {
-  final Laporan laporan;
+  final Item laporan;
 
   const ReportCard({super.key, required this.laporan});
 
   @override
   Widget build(BuildContext context) {
     final l = laporan;
+    final fotoPaths = LaporanStore.instance.fotoOf(l.id);
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(12),
@@ -61,7 +64,7 @@ class ReportCard extends StatelessWidget {
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              _Thumb(fotoPaths: l.fotoPaths),
+              _Thumb(fotoPaths: fotoPaths),
               const SizedBox(width: 12),
               Expanded(
                 child: Column(
@@ -71,7 +74,9 @@ class ReportCard extends StatelessWidget {
                       children: [
                         Expanded(
                           child: Text(
-                            l.kategori.toUpperCase(),
+                            ReferensiStore.instance
+                                .namaKategori(l.categoryId)
+                                .toUpperCase(),
                             style: const TextStyle(
                               fontSize: 11,
                               fontWeight: FontWeight.w500,
@@ -82,14 +87,14 @@ class ReportCard extends StatelessWidget {
                         ),
                         StatusBadge(
                           label: l.diklaim ? 'DIKLAIM' : l.badge,
-                          found: l.tipe == TipeLaporan.penemuan,
+                          found: l.type == ItemType.ditemukan,
                           claimed: l.diklaim,
                         ),
                       ],
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      l.namaBarang,
+                      l.title,
                       style: const TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w700,
@@ -97,11 +102,14 @@ class ReportCard extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(height: 4),
-                    _InfoLine(icon: Icons.place_outlined, text: l.lokasi),
+                    _InfoLine(
+                      icon: Icons.place_outlined,
+                      text: ReferensiStore.instance.namaLokasi(l.locationId),
+                    ),
                     const SizedBox(height: 2),
                     _InfoLine(
                       icon: Icons.calendar_today_outlined,
-                      text: formatTanggal(l.tanggal),
+                      text: formatTanggal(l.dateEvent),
                     ),
                   ],
                 ),
@@ -110,7 +118,7 @@ class ReportCard extends StatelessWidget {
           ),
           const SizedBox(height: 10),
           Text(
-            l.deskripsi,
+            l.description,
             style: const TextStyle(fontSize: 13, color: kTextGray),
           ),
           const SizedBox(height: 10),

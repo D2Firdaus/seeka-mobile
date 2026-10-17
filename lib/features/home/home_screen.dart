@@ -23,8 +23,8 @@ class _HomeScreenState extends State<HomeScreen> {
   double? _stickyExtent;
   int _measureTries = 0;
 
-  String? _kategori;
-  String? _lokasi;
+  int? _kategoriId;
+  int? _lokasiId;
   String? _tipe;
   DateTimeRange? _tanggal;
 
@@ -67,11 +67,14 @@ class _HomeScreenState extends State<HomeScreen> {
       builder: (ctx) => FilterSheet(
         title: 'Kategori',
         options: ['Semua', ...ReferensiStore.instance.semuaNamaKategori],
-        selected: _kategori ?? 'Semua',
+        selected: _kategoriId == null
+            ? 'Semua'
+            : ReferensiStore.instance.namaKategori(_kategoriId!),
       ),
     );
     if (pilihan != null) {
-      setState(() => _kategori = pilihan == 'Semua' ? null : pilihan);
+      setState(() => _kategoriId =
+          pilihan == 'Semua' ? null : ReferensiStore.instance.idKategoriDariNama(pilihan));
     }
   }
 
@@ -84,11 +87,14 @@ class _HomeScreenState extends State<HomeScreen> {
       builder: (ctx) => FilterSheet(
         title: 'Lokasi',
         options: ['Semua', ...ReferensiStore.instance.semuaNamaLokasi],
-        selected: _lokasi ?? 'Semua',
+        selected: _lokasiId == null
+            ? 'Semua'
+            : ReferensiStore.instance.namaLokasi(_lokasiId!),
       ),
     );
     if (pilihan != null) {
-      setState(() => _lokasi = pilihan == 'Semua' ? null : pilihan);
+      setState(() => _lokasiId =
+          pilihan == 'Semua' ? null : ReferensiStore.instance.idLokasiDariNama(pilihan));
     }
   }
 
@@ -131,8 +137,8 @@ class _HomeScreenState extends State<HomeScreen> {
     final hasil = LaporanStore.instance.query(
       q: _searchCtrl.text,
       deskripsi: _descCtrl.text,
-      kategori: _kategori,
-      lokasi: _lokasi,
+      kategori: _kategoriId,
+      lokasi: _lokasiId,
       tipe: _tipe,
       tanggalRange: _tanggal,
     );
@@ -235,13 +241,17 @@ class _HomeScreenState extends State<HomeScreen> {
               children: [
                 FilterChipButton(
                   label: 'Kategori',
-                  value: _kategori,
+                  value: _kategoriId == null
+                      ? null
+                      : ReferensiStore.instance.namaKategori(_kategoriId!),
                   onTap: _pilihKategori,
                 ),
                 const SizedBox(width: 10),
                 FilterChipButton(
                   label: 'Lokasi',
-                  value: _lokasi,
+                  value: _lokasiId == null
+                      ? null
+                      : ReferensiStore.instance.namaLokasi(_lokasiId!),
                   onTap: _pilihLokasi,
                 ),
                 const SizedBox(width: 10),

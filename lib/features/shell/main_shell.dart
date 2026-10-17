@@ -25,11 +25,11 @@ class _MainShellState extends State<MainShell> {
         children: [
           const HomeScreen(),
           ReportFormScreen(
-            tipe: TipeLaporan.penemuan,
+            tipe: ItemType.ditemukan,
             onSubmitted: _goHome,
           ),
           ReportFormScreen(
-            tipe: TipeLaporan.kehilangan,
+            tipe: ItemType.kehilangan,
             onSubmitted: _goHome,
           ),
           const ProfileScreen(),

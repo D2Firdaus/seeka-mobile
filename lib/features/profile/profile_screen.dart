@@ -91,7 +91,7 @@ class ProfileScreen extends StatelessWidget {
                 ),
                 const SizedBox(height: 12),
                 Text(
-                  user?.nama ?? '-',
+                  user?.name ?? '-',
                   textAlign: TextAlign.center,
                   style: const TextStyle(
                     fontSize: 18,

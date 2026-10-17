@@ -3,13 +3,15 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../../core/theme.dart';
 import '../../core/utils/formatters.dart';
+import '../../data/laporan_store.dart';
 import '../../data/models.dart';
+import '../../data/referensi_store.dart';
 import '../../shared/app_image.dart';
 import '../../shared/lock_icon.dart';
 import '../../shared/report_card.dart';
 
 class DetailScreen extends StatefulWidget {
-  final Laporan laporan;
+  final Item laporan;
 
   const DetailScreen({super.key, required this.laporan});
 
@@ -24,7 +26,7 @@ class _DetailScreenState extends State<DetailScreen> {
     final l = widget.laporan;
     final nomor = nomorWaWaMe(l.nomorWa);
     final pesan = Uri.encodeComponent(
-      'Halo, saya mengaku sebagai pemilik barang "${l.namaBarang}". '
+      'Halo, saya mengaku sebagai pemilik barang "${l.title}". '
       'Saya siap memberikan ciri khusus sebagai bukti kepemilikan.',
     );
     final uri = Uri.parse('https://wa.me/$nomor?text=$pesan');
@@ -39,7 +41,8 @@ class _DetailScreenState extends State<DetailScreen> {
   @override
   Widget build(BuildContext context) {
     final l = widget.laporan;
-    final isPenemuan = l.tipe == TipeLaporan.penemuan;
+    final fotoPaths = LaporanStore.instance.fotoOf(l.id);
+    final isPenemuan = l.type == ItemType.ditemukan;
 
     return Scaffold(
       backgroundColor: kPrimary,
@@ -76,14 +79,14 @@ class _DetailScreenState extends State<DetailScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        _FotoUtama(fotoPaths: l.fotoPaths, index: _fotoIndex),
-                        if (l.fotoPaths.length > 1) ...[
+                        _FotoUtama(fotoPaths: fotoPaths, index: _fotoIndex),
+                        if (fotoPaths.length > 1) ...[
                           const SizedBox(height: 8),
                           SizedBox(
                             height: 56,
                             child: ListView.separated(
                               scrollDirection: Axis.horizontal,
-                              itemCount: l.fotoPaths.length,
+                              itemCount: fotoPaths.length,
                               separatorBuilder: (_, _) =>
                                   const SizedBox(width: 8),
                               itemBuilder: (_, i) => InkWell(
@@ -99,7 +102,7 @@ class _DetailScreenState extends State<DetailScreen> {
                                       width: i == _fotoIndex ? 1.5 : 1,
                                     ),
                                     image: DecorationImage(
-                                      image: imageProviderFor(l.fotoPaths[i]),
+                                      image: imageProviderFor(fotoPaths[i]),
                                       fit: BoxFit.cover,
                                     ),
                                   ),
@@ -113,7 +116,9 @@ class _DetailScreenState extends State<DetailScreen> {
                           children: [
                             Expanded(
                               child: Text(
-                                l.kategori.toUpperCase(),
+                                ReferensiStore.instance
+                                    .namaKategori(l.categoryId)
+                                    .toUpperCase(),
                                 style: const TextStyle(
                                   fontSize: 12,
                                   fontWeight: FontWeight.w500,
@@ -131,7 +136,7 @@ class _DetailScreenState extends State<DetailScreen> {
                         ),
                         const SizedBox(height: 6),
                         Text(
-                          l.namaBarang,
+                          l.title,
                           style: const TextStyle(
                             fontSize: 20,
                             fontWeight: FontWeight.w700,
@@ -140,7 +145,7 @@ class _DetailScreenState extends State<DetailScreen> {
                         ),
                         const SizedBox(height: 6),
                         Text(
-                          l.deskripsi,
+                          l.description,
                           style: const TextStyle(
                             fontSize: 14,
                             color: kTextGray,
@@ -177,7 +182,8 @@ class _DetailScreenState extends State<DetailScreen> {
                           label: isPenemuan
                               ? 'Lokasi tercatat'
                               : 'Lokasi terakhir',
-                          value: l.lokasi,
+                          value: ReferensiStore.instance
+                              .namaLokasi(l.locationId),
                         ),
                         const SizedBox(height: 10),
                         _InfoRow(
@@ -185,7 +191,7 @@ class _DetailScreenState extends State<DetailScreen> {
                           label: isPenemuan
                               ? 'Tanggal ditemukan'
                               : 'Tanggal kehilangan',
-                          value: formatTanggal(l.tanggal),
+                          value: formatTanggal(l.dateEvent),
                         ),
                         const SizedBox(height: 12),
                         const Divider(color: kBorder),
